@@ -1,0 +1,10 @@
+cff-version: 1.0.0
+message: "{If you use this code and create new applications through it, please cite it as below.}"
+authors:
+  - family-names: "{Patel}"
+    given-names: "{Aarav}"
+    orcid: "https://orcid.org/0009-0000-3054-0583"
+title: "{Lichess_Bot-YourChessPartner}"
+version: "{1.0.0}"
+date-released: "2026-03-22"
+url: "{ex: https://github.com/GoogleHub67/Lichess_BOT-YourChessPartner}"
