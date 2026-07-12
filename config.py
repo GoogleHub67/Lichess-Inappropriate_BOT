@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     LICHESS_TOKEN: str = os.getenv("LICHESS_TOKEN", "YOUR_TOKEN_HERE")
-    STOCKFISH_PATH: str = r"C:\Users\Aarav\OneDrive\Documents\MY_STUFF\Chess.zip\ChessSoftwares\Stockfish\stockfish-windows-x86-64-avx2.exe"
+    STOCKFISH_PATH: str = r"C:\path\to\Stochfish\"
     BOOK_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "books", "gm2001.bin"))
 
     CPL_MIN_SAMPLES: int = 3
@@ -22,7 +22,7 @@ class Config:
         (999, 1320),
     ]
 
-    ACCEPT_VARIANTS: list[str] = ["standard"]
+    ACCEPT_VARIANTS: list[str] = ["standard", "chess960"]
     ACCEPT_TIME_CONTROLS: list[str] = ["bullet", "blitz", "rapid", "classical", "correspondence"]
     DECLINE_RATED: bool = False
 
