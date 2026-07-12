@@ -112,6 +112,8 @@ forks or distributions.
 - Needs at least 3 opponent moves before CPL kicks in
 - Once upgraded to BOT, the account cannot play as a human anymore
 - Needs CMD/PowerShell to be open to play with the bot
+  - Windows Tip: Users can launch it silently using pythonw bot.py instead of python bot.py to hide the command prompt window.
+  - Linux/Mac Tip: Users can run nohup python bot.py & to safely close their terminal window without killing the bot process.
 ---
 
 ## Credits
