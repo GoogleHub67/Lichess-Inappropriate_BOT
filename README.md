@@ -90,12 +90,33 @@ python bot.py
 
 ## File structure
 ```
-├── bot.py             - Main entry point, event stream, challenge handler
-├── game_handler.py    - Per-game loop and move logic
-├── skill_estimator.py - CPL tracker and ELO mapper
-├── config.py          - All settings
-├── requirements.txt   - Python dependencies
-└── README.md
+Lichess_BOT-YourChessPartner/
+├── assets/
+    ├── books
+        ├── gm2001.bin
+    ├── logs
+        ├── bot.log
+├── src/
+│   ├── bot.py
+│   ├── game_handler.py
+│   └── skill_estimator.py
+├── .env.example
+├── .gitignore
+├── Citation.cff
+├── CODE_OF_CONDUCT.md
+├── CONFIGURING.md
+├── config.py
+├── config.yml.default
+├── launch_unix.sh
+├── launch_windows.bat
+├── LICENSE
+├── README.md
+├── requirements.txt
+├── SECURITY.md
+├── setup_linux.sh
+├── setup_mac.sh
+└── setup_windows.ps1
+
 ```
 
 ---
@@ -144,7 +165,7 @@ A: The bot adapts to your live centipawn loss, not your rating. If you play accu
 A: The bot auto-resigns when it detects it is getting mated in 3 or less moves.
 
 **Q: Can I use this bot for training?**
-A: Yes! That's exactly what it's designed for.
+A: Yes! That's exactly what it's designed for.**
 
 ---
 
