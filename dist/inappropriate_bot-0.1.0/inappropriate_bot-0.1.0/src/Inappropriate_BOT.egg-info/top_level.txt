@@ -1,3 +1,0 @@
-bot
-game_handler
-skill_estimator
