@@ -210,3 +210,14 @@ config.yml
 .env
 *.bin
 bot.log
+
+# Ensure dot-folders are tracked and not ignored by Git
+!.github/
+!.claude/
+!.vscode/
+
+# Ignore personal local workspace states, but keep shared settings visible
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
