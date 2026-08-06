@@ -91,20 +91,31 @@ python bot.py
 ## File structure
 ```
 Lichess_BOT-YourChessPartner/
+├── .github/
+    ├── ISSUE_TEMPLATE/
+        ├── bug_report.md
+    ├── workflows/
+        ├── bot-ci.yml
+        ├── lint-and-test.yml
+    ├── pull_request_template.md
+├── .vscode/
+    ├── settings.json
 ├── assets/
-    ├── books
+    ├── books/
         ├── gm2001.bin
-    ├── logs
-        ├── bot.log
 ├── src/
 │   ├── bot.py
 │   ├── game_handler.py
 │   └── skill_estimator.py
+├── tests/
+    ├── tests.txt
 ├── .env.example
 ├── .gitignore
 ├── Citation.cff
 ├── CODE_OF_CONDUCT.md
-├── CONFIGURING.md
+├── CONTRIBUTING.md
+├── __init__.py
+├── pyproject.toml
 ├── config.py
 ├── config.yml.default
 ├── launch_unix.sh
@@ -116,7 +127,6 @@ Lichess_BOT-YourChessPartner/
 ├── setup_linux.sh
 ├── setup_mac.sh
 └── setup_windows.ps1
-
 ```
 
 ---
