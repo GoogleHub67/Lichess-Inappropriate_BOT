@@ -18,9 +18,7 @@ dependencies = [
 modules = ["your_module_name_here"] 
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 
-[tool.setuptools]
-# Tells the build engine to bundle bot.py and __init__.py from the root
-py-modules = ["bot"]
-
+[project.scripts]
+inappropriate-bot = "Inappropriate_BOT.bot:main"
