@@ -1,210 +1,179 @@
-# Inappropriate_BOT - Adaptive Chess Partner
+# 🤖 Lichess-Inappropriate_BOT
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![Language](https://shields.io)
+![Engine](https://shields.io)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Lichess](https://img.shields.io/badge/Lichess-Bot-brown)
+![Status](https://shields.io)
 
-A Lichess bot that dynamically adapts its playing strength to match your live 
-skill level using centipawn loss analysis. The harder you play, the harder it 
-plays back. Supports all Lichess variants with Fairy-Stockfish.
+## 📖 Table of Contents
 
-Built by Aarav Patel.
-
-NOTE: Based on https://github.com/lichess-bot-devs/lichess-bot (AGPL License)
-
----
-
-## How it works
-```
-Game starts
-    |
-    v
-Bot plays at default ELO (1200)
-    |
-    v
-Tracks your centipawn loss per move
-    |   -> rolling average CPL
-    |
-    v
-Maps avg CPL -> Stockfish ELO
-    |   CPL <= 15  -> ELO 2200 (master)
-    |   CPL <= 25  -> ELO 2000 (expert)
-    |   CPL <= 40  -> ELO 1800 (strong club)
-    |   CPL <= 60  -> ELO 1600 (intermediate)
-    |   CPL <= 90  -> ELO 1400 (casual)
-    |   CPL <= 130 -> ELO 1200 (beginner)
-    |   CPL > 130  -> ELO 1000 (newcomer)
-    v
-Plays at that ELO for the rest of the game
-```
+1. [Introduction](#1-introduction)
+2. [Project Goal](#2-project-goal)
+3. [Architecture & Workflow](#3-architecture--workflow)
+4. [Core Features](#4-core-features)
+5. [Prerequisites & System Requirements](#5-prerequisites--system-requirements)
+6. [Installation Blueprint](#6-installation-blueprint)
+7. [Environment Configuration](#7-environment-configuration)
+8. [Comprehensive Directory Mapping](#8-comprehensive-directory-mapping)
+9. [Detailed Module Breakdown](#9-detailed-module-breakdown)
+10. [Advanced Usage Framework](#10-advanced-usage-framework)
+11. [API & Programmatic Reference](#11-api--programmatic-reference)
+12. [Troubleshooting & Diagnostics](#12-troubleshooting--diagnostics)
+13. [Performance Fine-Tuning](#13-performance-fine-tuning)
+14. [Contributing Lifecycle](#14-contributing-lifecycle)
+15. [License Agreements](#15-license-agreements)
+16. [Credits and Badges](#16-credits-and-badges)
+17. [Future Roadmap](#17-future-roadmap)
 
 ---
 
-## Features
-- Fully adaptive strength based on live CPL
-- Supports all Lichess variants (Fairy-Stockfish for variants)
-- Smart draw handling (accepts when losing, declines when winning)
-- Auto-resigns when mated in 3 or less
-- Takeback support
-- Multiple concurrent games
-- Automatic stream reconnection
-- Works with bullet, blitz, rapid, classical, correspondence
+## 1. Introduction
+`Lichess-Inappropriate_BOT` is an open-source, fully automated chess execution engine designed to interface natively with the lichess.org Bot API. Constructed using modern Python workflows, the bot acts as a bridge between asynchronous web streaming loops and local command-line chess engine binaries, processing matches across classical formats and alternative variants flawlessly.
 
----
+## 2. Project Goal
+The ultimate core focus of the project is to build an **Adaptive Chess Partner** that dynamically matches an opponent's real-time playing prowess. By calculating performance on a per-move basis, the framework prevents games from feeling stagnant, creating a flexible environment that tests tactical accuracy dynamically throughout the match lifecycles.
 
-## Setup
+## 3. Architecture & Workflow
+The system reads gameplay states continuously via streaming long-lived TCP connections, estimating performance using a specialized rolling calculation matrix:
 
-### 1. Install dependencies
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Consolas;}{\f1\fnil\fcharset0 Arial;}}
+{\colortbl ;\red13\green17\blue23;\red88\green166\blue255;\red240\green246\blue252;\red48\green54\blue61;}
+\viewkind4\uc1
+\shadow\box\cbpat1\padl120\padr120\padt120\padb120\brdrb\brdrs\brdrw10\brdrc4
+\pard\sa200\qc\f1\fs28\cf2\b 🚀 BOT WORKFLOW MINDMAP\cf0\b0\par
+\pard\f0\fs20\cf3
+* GAME STARTS\par
+\cf2\'a6\cf3\par
+\'a6-- [1. Default State]\par
+\'a6   \'a6-- Bot initializes at default ELO 1200\par
+\'a6\par
+\'a6-- [2. Live Tracking Loop]\par
+\'a6   \'a6-- Monitors opponent moves continuously\par
+\'a6   \'a6-- Calculates rolling average Centipawn Loss (CPL)\par
+\'a6\par
+\'a6-- [3. Dynamic Mapping Phase]\par
+\'a6   \'a6-- CPL <= 15   -> ELO 2200 (Master)\par
+\'a6   \'a6-- CPL <= 25   -> ELO 2000 (Expert)\par
+\'a6   \'a6-- CPL <= 40   -> ELO 1800 (Strong Club)\par
+\'a6   \'a6-- CPL <= 60   -> ELO 1600 (Intermediate)\par
+\'a6   \'a6-- CPL <= 90   -> ELO 1400 (Casual)\par
+\'a6   \'a6-- CPL <= 130  -> ELO 1200 (Beginner)\par
+\'a6   \'a6-- CPL > 130   -> ELO 1000 (Newcomer)\par
+\'a6\par
+\'a2-- [4. Lock-In Phase]\par
+    \'a2-- Enforces calculated target ELO for remaining game matrix\par
+}
+
+
+## 4. Core Features
+* **Live CPL Scaling:** Real-time optimization updates that dynamically scale difficulty setting attributes.
+* **Variant Integration:** Full execution compatibility with all variants supported by Fairy-Stockfish.
+* **Smart Draw Strategy:** Rejects draw queries when holding advantages; accepts when under heavy strain.
+* **Predictive Resignations:** Instantly detects unpreventable forced checkmates in 3 moves or fewer.
+* **Concurrent Scaling:** Handles multiple asynchronous platform matches running at once.
+
+## 5. Prerequisites & System Requirements
+* **Runtime Core:** Python 3.10 or newer (configured along with local virtual environments).
+* **Engines:** Local system execution paths pointing to standard Stockfish or Fairy-Stockfish binaries.
+* **Platform Constraints:** A dedicated, unplayed Lichess profile upgraded strictly to a `BOT` status.
+
+## 6. Installation Blueprint
+To deploy using the pre-compiled Python distribution packaging wheels, run the installation sequence directly through your tool terminal:
+```bash
+pip install inappropriate_bot-1.0.0-py3-none-any.whl
 ```
+To run directly from the raw source code compression archive, unpack the package components manually:
+```bash
+tar -xvf inappropriate_bot-1.0.0.tar.gz
+cd inappropriate_bot-1.0.0
 pip install -r requirements.txt
 ```
 
-### 2. Install Stockfish
-- Windows: https://stockfishchess.org/download/
-- Linux: `sudo apt install stockfish`
-- Mac: `brew install stockfish`
-
-### 3. Install Fairy-Stockfish (for variants)
-Download from https://github.com/fairy-stockfish/Fairy-Stockfish/releases
-Place it in the same folder as Stockfish and update FAIRY_STOCKFISH_PATH in config.py.
-
-### 4. Create a Lichess BOT account
-- Make a NEW Lichess account (never played any games)
-- Go to https://lichess.org/account/oauth/token/create
-- Tick only `bot:play` scope
-- Copy the token
-
-### 5. Configure
-Create a `.env` file:
+## 7. Environment Configuration
+The application consumes standard credentials through an active `.env` configuration template or a localized configuration layout. Create a `config.yml` block in your workspace path:
+```yaml
+token: "lip_YOUR_SECURE_LICHESS_API_TOKEN"
+engine:
+  path: "./stockfish-windows-x86-64-avx2.exe"
+  variants: "./fairy-stockfish-largeboard_x86-64.exe"
 ```
+Alternatively, apply configuration rules directly using a root `.env` template parameter configuration:
+```env
 LICHESS_TOKEN=lip_yourtoken
 ```
-Update `STOCKFISH_PATH` and `FAIRY_STOCKFISH_PATH` in config.py to your engine locations.
 
-### 6. Run
-```
-python bot.py
-```
-
----
-
-## File structure
-```
-Lichess_BOT-YourChessPartner/
+## 8. Comprehensive Directory Mapping
+```text
+Lichess-Inappropriate_BOT/
 ├── .github/
-    ├── ISSUE_TEMPLATE/
-        ├── bug_report.md
-    ├── workflows/
-        ├── bot-ci.yml
-        ├── lint-and-test.yml
-    ├── pull_request_template.md
-├── .vscode/
-    ├── settings.json
+│   ├── ISSUE_TEMPLATE/
+│   │   └── bug_report.md
+│   └── workflows/
+│       ├── bot-ci.yml
+│       └── lint-and-test.yml
 ├── assets/
-    ├── books/
-        ├── gm2001.bin
+│   └── books/
+│       └── gm2001.bin
 ├── src/
+│   ├── __init__.py
 │   ├── bot.py
 │   ├── game_handler.py
 │   └── skill_estimator.py
-├── tests/
-    ├── tests.txt
-├── .env.example
-├── .gitignore
-├── Citation.cff
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── __init__.py
+├── dist/
+│   ├── inappropriate_bot-1.0.0-py3-none-any.whl
+│   └── inappropriate_bot-1.0.0.tar.gz
 ├── pyproject.toml
 ├── config.py
 ├── config.yml.default
-├── launch_unix.sh
-├── launch_windows.bat
-├── LICENSE
-├── README.md
 ├── requirements.txt
-├── SECURITY.md
-├── setup_linux.sh
-├── setup_mac.sh
-└── setup_windows.ps1
+└── LICENSE
 ```
 
----
+## 9. Detailed Module Breakdown
+* **`src/bot.py`**: Boots the foundational framework runtime, sets up thread pools, and listens to event pipes.
+* **`src/game_handler.py`**: Implements state rules, reads board steps, and processes challenge transactions.
+* **`src/skill_estimator.py`**: Tracks analytical evaluation metrics to map centipawn metrics directly onto target ratings.
 
-## Contributing
-Pull requests are welcome! If you have ideas for improvements, feel free to open 
-an issue or submit a PR. Please credit the original author (Aarav Patel) in any 
-forks or distributions.
-
----
-
-## Known Limitations
-- Requires Stockfish and Fairy-Stockfish installed locally
-- Needs at least 3 opponent moves before CPL kicks in
-- Once upgraded to BOT, the account cannot play as a human anymore
-- Needs CMD/PowerShell to be open to play with the bot
-  - Windows Tip: Users can launch it silently using pythonw bot.py instead of python bot.py to hide the command prompt window.
-  - Linux/Mac Tip: Users can run nohup python bot.py & to safely close their terminal window without killing the bot process.
----
-
-## Credits
-- [Stockfish](https://stockfishchess.org/) - Chess engine
-- [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish) - Variant chess engine
-- [python-chess](https://python-chess.readthedocs.io/) - Chess library
-- [lichess-bot-devs](https://github.com/lichess-bot-devs/lichess-bot) - Bot framework reference (AGPL)
-
----
-
-## Roadmap
-- [ ] Deploy on cloud for 24/7 uptime
-- [ ] Web dashboard to monitor live games
-- [ ] Custom opening repertoire support
-- [ ] ELO tracking over time
-
----
-
-## FAQ
-
-**Q: Why did the bot decline my draw offer?**
-A: The bot only accepts draws when it is losing or the position is equal.
-
-**Q: Why is the bot playing so strong/weak?**
-A: The bot adapts to your live centipawn loss, not your rating. If you play accurately it plays stronger.
-
-**Q: Why did the bot resign?**
-A: The bot auto-resigns when it detects it is getting mated in 3 or less moves.
-
-**Q: Can I use this bot for training?**
-A: Yes! That's exactly what it's designed for.**
-
----
-
-## Changelog
-
-### v1.0.0 (2026-03-22)
-- Initial release
-- Live CPL-based adaptive difficulty using UCI_Elo
-- Auto-accept challenges
-- Smart draw handling
-- Auto-resign on forced mate
-- Takeback support
-- Multiple concurrent games
-- Automatic stream reconnection
-- Support for 2 chess game types—Classical & Chess960.
----
-
-## Optional: Environment variables
-Install python-dotenv for secure token storage:
+## 10. Advanced Usage Framework
+Launch the tool package command interface execution entry point natively via the active console window:
+```bash
+inappropriate_bot
 ```
-pip install python-dotenv
+For deep application tracing or to enforce active execution visibility without immediate background detachment, run the raw script modules via:
+```bash
+python -m src.bot
 ```
-Create a `.env` file:
-```
-LICHESS_TOKEN=lip_yourtoken
-```
-Otherwise paste your token directly in config.py.
+* **Silent Mode Execution (Windows):** Suppress the command console pop-up layer by utilizing `pythonw bot.py`.
+* **Detached Runtime (Linux/Mac):** Maintain long-term execution after dropping SSH sessions via `nohup python bot.py &`.
 
----
+## 11. API & Programmatic Reference
+The internal handlers parse data properties streaming from Lichess's public development entry channels:
+* `GET /api/stream/event`: Establishes the real-time event pipeline to interceptIncoming game challenges.
+* `POST /api/bot/game/{gameId}/move/{move}`: Ships calculated chess engine calculations back to the board matrix.
+* `POST /api/bot/game/{gameId}/chat`: Emits automated status alerts directly to the in-game log panel.
 
-## License
-MIT License - Copyright (c) 2026 Aarav Patel
+## 12. Troubleshooting & Diagnostics
+* **Flashing Window/Instant Exit:** Avoid clicking raw module paths directly from the explorer window. Launch the module commands manually from an already open terminal window to capture active error flags.
+* **401 Authentication Validation Errors:** Confirm your token features the authorized `bot:play` permission configuration.
+* **Engine Connection Timeout:** Ensure path variables in `config.py` point directly to legitimate engine instances.
+
+## 13. Performance Fine-Tuning
+Optimize your engine properties for low-latency calculations:
+* **Core Distribution:** Align the calculation process properties explicitly with actual machine CPU core limitations.
+* **Hash Optimization:** Raise local allocation ceilings (e.g., to 2048MB) within your script configuration values to accelerate high-depth searches.
+
+## 14. Contributing Lifecycle
+We welcome pull requests and enhancements. Review the comprehensive style standards, pipeline conditions, and branch submission structures maintained in our [`CONTRIBUTING.md`](./CONTRIBUTING.md) configuration layout.
+
+## 15. License Agreements
+This codebase is entirely open-source software distributed under the terms of the **MIT License**. For complete copyright parameters, review the root [`LICENSE`](./LICENSE) text asset. This framework acts as a bridge reference derived from the original engine systems managed under the AGPL open-source guidelines.
+
+## 16. Credits and Badges
+* Developed utilizing foundational structural wrappers provided by the [lichess-bot-devs](https://github.com/lichess-bot-devs/lichess-bot) community team.
+* Core engine operations run via official [Stockfish](https://stockfishchess.org/) and [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish) projects.
+* Object representations managed inside Python using the open-source [python-chess](https://python-chess.readthedocs.io/) runtime package library.
+
+## 17. Future Roadmap
+* [ ] Integrate native web dashboard interfaces to keep track of active match histories.
+* [ ] Support customized cloud hosting integration setups for true 24/7 uptime.
+* [ ] Automate opening database selections according to opponent account configurations.
