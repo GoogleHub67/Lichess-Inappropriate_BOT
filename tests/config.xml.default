@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    Lichess Inappropriate BOT - Configuration Template
+    Instructions: Duplicate this file, rename it to 'extra_config.xml', 
+    and adjust the values below to match your bot's preferences.
+-->
+<configuration>
+    <game_settings>
+        <!-- The baseline rating your bot assumes for new or unranked opponents -->
+        <default_elo>1500</default_elo>
+        
+        <!-- Set to true if you want the bot to auto-decline rated match challenges -->
+        <decline_rated>false</decline_rated>
+        
+        <!-- 
+            Variants the bot is allowed to accept. 
+            Options include: stanadard, chess960, crazyhouse, antichess, atomic, horde, kingOfTheHill, 
+            racingKings, threeCheck.
+        -->
+        <accept_variants>
+            <variant>standard</variant>
+            <variant>chess960</variant>
+            <variant>kingoftheHill</variant>
+            <variant>threeCheck</variant>
+            <variant>crazyhouse</variant>
+            <variant>antichess</variant>
+            <variant>atomic</variant>
+            <variant>horde</variant>
+            <variant>racingKings</variant>
+        </accept_variants>
+        
+        <!-- 
+            Time controls the bot is allowed to accept.
+            Options include: ultraBullet, bullet, blitz, rapid, classical, correspondence.
+        -->
+        <accept_time_controls>
+            <time_control>hyperbullet</time_control>
+            <time_control>bullet</time_control>
+            <time_control>blitz</time_control>
+            <time_control>rapid</time_control>
+            <time_control>classical</time_control>
+            <time_control>correspondence</time_control>
+            <time_control>unlimited</time_control>
+        </accept_time_controls>
+    </game_settings>
+
+    <!-- Interactive script notifications sent directly to the Lichess game chat room -->
+    <bot_chat>
+        <greet>Hi! I'll adapt to your level. Good luck!</greet>
+        <off_book>You're out of book! Adapting to your level now.</off_book>
+        <gg>Good game! Review your moves - that's how you improve.</gg>
+        <blunder_detected>Oof. Big blunder there!</blunder_detected>
+    </bot_chat>
+</configuration>
