@@ -16,7 +16,7 @@ if config_folder_path not in sys.path:
     sys.path.insert(0, config_folder_path)
 
 # 3. Add site-packages as a secondary fallback for dependencies
-site_packages_path = r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages"
+site_packages_path = r"C:\Users\{your-username}\AppData\Local\Programs\Python\Python311\Lib\site-packages"
 if site_packages_path not in sys.path:
     sys.path.append(site_packages_path)
 
