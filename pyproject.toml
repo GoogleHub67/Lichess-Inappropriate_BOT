@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "Inappropriate_BOT"
-version = "0.1.0"
+version = "1.0.0"
 description = "My adaptive Lichess bot packaged as a library"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -13,12 +13,8 @@ dependencies = [
     "berserk>=0.11.0"
 ]
 
-[tool.setuptools]
-# Explicitly lists the modules in your root directory to include
-modules = ["your_module_name_here"] 
+[project.scripts]
+inappropriate-bot = "Inappropriate_BOT.bot:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[project.scripts]
-inappropriate-bot = "Inappropriate_BOT.bot:main"
