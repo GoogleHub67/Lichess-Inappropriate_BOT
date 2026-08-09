@@ -1,5 +1,10 @@
 import os
 import sys
+import asyncio
+import json
+import logging
+import httpx
+import xml.etree.ElementTree as ET
 
 # 1. Track down the parent folder (Lichess-Inappropriate_BOT)
 src_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,10 +21,6 @@ if site_packages_path not in sys.path:
     sys.path.append(site_packages_path)
 
 # 4. Now run imports
-import asyncio
-import json
-import logging
-import httpx
 from bot_config import Config  # Successfully pulls from \config\bot_config.py
 from game_handler import GameHandler
 
@@ -36,6 +37,68 @@ log = logging.getLogger(__name__)
 BASE_URL = "https://lichess.org"
 
 
+def patch_config_via_xml():
+    """
+    Parses config.xml and patches the Config class attributes 
+    dynamically in-memory without changing config.py source code.
+    """
+    xml_path = os.path.join(project_root, "tests", "config.xml")
+    
+    if not os.path.exists(xml_path):
+        log.warning(f"config.xml not found at {xml_path}. Relying on hardcoded defaults.")
+        return
+
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # 1. Parse Game Settings Nodes
+        game_settings = root.find("game_settings")
+        if game_settings is not None:
+            def_elo_node = game_settings.find("default_elo")
+            if def_elo_node is not None and def_elo_node.text:
+                Config.DEFAULT_ELO = int(def_elo_node.text)
+
+            decline_node = game_settings.find("decline_rated")
+            if decline_node is not None and decline_node.text:
+                Config.DECLINE_RATED = decline_node.text.lower() == "true"
+
+            variants_node = game_settings.find("accept_variants")
+            if variants_node is not None:
+                Config.ACCEPT_VARIANTS = [v.text for v in variants_node.findall("variant") if v.text]
+
+            tc_node = game_settings.find("accept_time_controls")
+            if tc_node is not None:
+                Config.ACCEPT_TIME_CONTROLS = [t.text for t in tc_node.findall("time_control") if t.text]
+
+        # 2. Parse Chat Text Elements
+        bot_chat = root.find("bot_chat")
+        if bot_chat is not None:
+            greet_node = bot_chat.find("greet")
+            if greet_node is not None and greet_node.text:
+                Config.CHAT_GREET = greet_node.text
+
+            off_book_node = bot_chat.find("off_book")
+            if off_book_node is not None and off_book_node.text:
+                Config.CHAT_OFF_BOOK = off_book_node.text
+
+            gg_node = bot_chat.find("gg")
+            if gg_node is not None and gg_node.text:
+                Config.CHAT_GG = greet_node.text if gg_node.text is None else gg_node.text
+
+            blunder_node = bot_chat.find("blunder_detected")
+            if blunder_node is not None and blunder_node.text:
+                Config.CHAT_BLUNDER_DETECTED = blunder_node.text
+        
+        log.info("In-memory patching completed successfully from config.xml!")
+    except Exception as e:
+        log.error(f"Failed to inject XML rules onto Config module attributes: {e}")
+
+
+# Run the configuration sync immediately before initialization
+patch_config_via_xml()
+
+
 class LichessBot:
     def __init__(self):
         self.token = Config.LICHESS_TOKEN
@@ -44,13 +107,24 @@ class LichessBot:
 
     async def start(self):
         async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=30) as client:
-            profile = (await client.get("/api/account")).json()
+            response = await client.get("/api/account")
+            
+            # Catch bad authentication states early to prevent runtime KeyError crashes
+            if response.status_code == 401:
+                log.critical("CRITICAL: Lichess API Token rejected! (401 Unauthorized). Verify your token string in the .env file.")
+                return
+
+            profile = response.json()
+            if "username" not in profile:
+                log.critical(f"CRITICAL: Failed to parse user profile. Network payload: {profile}")
+                return
+
             log.info(f"Logged in as: {profile['username']}")
             if profile.get("title") != "BOT":
                 log.info("Upgrading to BOT account...")
                 await client.post("/api/bot/account/upgrade")
 
-        log.info("StopBlunderingInOpeningsYouIdiot is ONLINE")
+        log.info("INAPPROPRIATE_BOT is ONLINE")
         await self._stream_events()
 
     async def _stream_events(self):
