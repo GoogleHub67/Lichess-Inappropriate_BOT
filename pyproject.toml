@@ -12,3 +12,10 @@ dependencies = [
     "chess>=1.0.0",
     "berserk>=0.11.0"
 ]
+
+[tool.setuptools]
+# Explicitly lists the modules in your root directory to include
+modules = ["your_module_name_here"] 
+
+[tool.setuptools.packages.find]
+where = ["."]
