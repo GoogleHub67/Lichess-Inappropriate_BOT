@@ -1,3 +1,18 @@
+import os
+import sys
+
+# Direct Python to look inside the \config\ directory
+src_dir = os.path.dirname(os.path.abspath(__file__))
+config_folder_path = os.path.join(os.path.dirname(src_dir), "config")
+if config_folder_path not in sys.path:
+    sys.path.insert(0, config_folder_path)
+
+site_packages_path = r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages"
+if site_packages_path not in sys.path:
+    sys.path.append(site_packages_path)
+
+# Followed by your original imports...
+from bot_config import Config
 import asyncio
 import json
 import logging
@@ -6,12 +21,10 @@ import chess
 import chess.engine
 import chess.polyglot
 import httpx
-from config import Config
 from skill_estimator import SkillEstimator
 
 log = logging.getLogger(__name__)
 BASE_URL = "https://lichess.org"
-
 
 class GameHandler:
     def __init__(self, game_id: str, token: str):
@@ -93,40 +106,99 @@ class GameHandler:
         if state.get("status", "started") not in ("started", "created"):
             await self._chat(Config.CHAT_GG)
             return
+
+        # Count moves currently on the board before adding the new one
+        old_moves_count = len(self.board.move_stack)
+        
         self.board = chess.Board()
         moves_str = state.get("moves", "").strip()
         if moves_str:
             for uci in moves_str.split():
                 self.board.push_uci(uci)
+
+        new_moves_count = len(self.board.move_stack)
+
+        # If the opponent just played a move, record its impact on CPL
+        if self.estimator and not self.in_book:
+            if new_moves_count > old_moves_count and self.board.turn == self.our_color:
+                # Wrap in executor because engine analysis is blocking
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, lambda: self.estimator.record_opponent_move(self.board))
+
         if self.board.turn == self.our_color:
             await self._make_move(state)
 
     async def _make_move(self, state: dict):
-        move = None
-
+        """
+        Analyzes the position, handles opening book lookups, and processes 
+        the final selected move through the endgame mate-throttling matrix.
+        """
+        # 1. Handle Opening Book if applicable
         if self.in_book:
-            move = self._book_move()
-            if move:
-                log.info(f"Book move: {move.uci()}")
-            else:
+            try:
+                with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
+                    entries = list(reader.find_all(self.board))
+                    if entries:
+                        # Pick a book move based on weights
+                        import random
+                        weights = [e.weight for e in entries]
+                        entry = random.choices(entries, weights=weights, k=1)[0]
+                        book_move = entry.move()
+                        
+                        log.info(f"Opening Book Move Played: {book_move}")
+                        await self.client.post(f"/api/bot/game/{self.game_id}/move/{book_move.uci()}")
+                        return
+                    else:
+                        self.in_book = False
+                        log.info("Opening book exhausted. Switching to live engine analysis.")
+            except Exception as e:
                 self.in_book = False
-                log.info("Out of book")
-                if not self.off_book_notified:
-                    await self._chat(Config.CHAT_OFF_BOOK)
-                    self.off_book_notified = True
+                log.warning(f"Failed to read opening book ({e}). Falling back to engine.")
 
-        if move is None:
-            elo = self.estimator.get_elo() if self.estimator else Config.DEFAULT_ELO
-            move = await self._stockfish_move(elo, state)
+        # 2. Live Engine Position Analysis
+        try:
+            # Wrap engine analysis in an executor to avoid blocking the main async loop
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(
+                None, 
+                lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=14))
+            )
+            
+            # 3. Capture Position Baseline for Opponent CPL evaluation on the next turn
+            if self.estimator:
+                score_before = info["score"].pov(self.our_color)
+                if score_before.is_mate():
+                    self.estimator._last_eval = float('inf') if score_before.mate() > 0 else float('-inf')
+                else:
+                    self.estimator._last_eval = score_before.score()
 
-        if move and self.board.is_legal(move):
-            await self._send_move(move.uci())
-            if self.estimator and not self.in_book:
-                board_copy = self.board.copy()
-                board_copy.push(move)
-                asyncio.create_task(self._update_cpl(board_copy))
-        else:
-            log.error(f"Illegal/null move: {move}")
+            # 4. Get Current Rolling Opponent Elo Context
+            current_opponent_elo = self.estimator.get_elo() if self.estimator else Config.DEFAULT_ELO
+
+            # 5. Filter Move Selection via the Endgame Cat-and-Mouse Matrix
+            if self.estimator:
+                final_move = self.estimator.throttle_mate_move(
+                    info=info,
+                    opponent_elo=current_opponent_elo,
+                    legal_moves=list(self.board.legal_moves)
+                )
+            else:
+                final_move = info["move"]
+
+            # 6. Safety Check: Fallback if final_move resolution runs into issues
+            if not final_move:
+                final_move = list(self.board.legal_moves)[0]
+
+            # 7. Post the calculated move directly to the Lichess API endpoint
+            log.info(f"Sending move to Lichess: {final_move.uci()} (Target Elo Context: {current_opponent_elo})")
+            await self.client.post(f"/api/bot/game/{self.game_id}/move/{final_move.uci()}")
+
+        except Exception as e:
+            log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
+            # Panic mode fallback: try to play any legal move to prevent losing on time
+            if list(self.board.legal_moves):
+                panic_move = list(self.board.legal_moves)[0]
+                await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _update_cpl(self, board_after_our_move: chess.Board):
         try:
