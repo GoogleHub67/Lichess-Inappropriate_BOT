@@ -36,7 +36,8 @@ The ultimate core focus of the project is to build an **Adaptive Chess Partner**
 ## 3. Architecture & Workflow
 The system reads gameplay states continuously via streaming long-lived TCP connections, estimating performance using a specialized rolling calculation matrix:
 
-Game Starts
+```
+   Game Starts
    │
    ├── [1. Default State]
    │     └── Bot initializes at default ELO 1200
@@ -56,6 +57,7 @@ Game Starts
    │
    └── [4. Lock-In Phase]
          └── Enforces calculated target ELO for remaining game matrix
+```
 
 ## 4. Core Features
 * **Live CPL Scaling:** Real-time optimization updates that dynamically scale difficulty setting attributes.
