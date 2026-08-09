@@ -24,6 +24,3 @@ where = ["."]
 # Tells the build engine to bundle bot.py and __init__.py from the root
 py-modules = ["bot"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-
