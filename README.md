@@ -1,9 +1,9 @@
 # 🤖 Lichess-Inappropriate_BOT
 
-![Language](https://shields.io)
-![Engine](https://shields.io)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Status](https://shields.io)
+![Language](https://shields.io/badge/Language-English-black)
+![Engine](https://shields.io/badge/Engine-Stockfish-red)
+![License](https://img.shields.io/badge/License-MIT-teal)
+![Status](https://img.shields.io/badge/Status-Active-darkgreen)
 
 ## 📖 Table of Contents
 
