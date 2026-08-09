@@ -36,34 +36,26 @@ The ultimate core focus of the project is to build an **Adaptive Chess Partner**
 ## 3. Architecture & Workflow
 The system reads gameplay states continuously via streaming long-lived TCP connections, estimating performance using a specialized rolling calculation matrix:
 
-{\rtf1\ansi\ansicpg1252\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Consolas;}{\f1\fnil\fcharset0 Arial;}}
-{\colortbl ;\red13\green17\blue23;\red88\green166\blue255;\red240\green246\blue252;\red48\green54\blue61;}
-\viewkind4\uc1
-\shadow\box\cbpat1\padl120\padr120\padt120\padb120\brdrb\brdrs\brdrw10\brdrc4
-\pard\sa200\qc\f1\fs28\cf2\b 🚀 BOT WORKFLOW MINDMAP\cf0\b0\par
-\pard\f0\fs20\cf3
-* GAME STARTS\par
-\cf2\'a6\cf3\par
-\'a6-- [1. Default State]\par
-\'a6   \'a6-- Bot initializes at default ELO 1200\par
-\'a6\par
-\'a6-- [2. Live Tracking Loop]\par
-\'a6   \'a6-- Monitors opponent moves continuously\par
-\'a6   \'a6-- Calculates rolling average Centipawn Loss (CPL)\par
-\'a6\par
-\'a6-- [3. Dynamic Mapping Phase]\par
-\'a6   \'a6-- CPL <= 15   -> ELO 2200 (Master)\par
-\'a6   \'a6-- CPL <= 25   -> ELO 2000 (Expert)\par
-\'a6   \'a6-- CPL <= 40   -> ELO 1800 (Strong Club)\par
-\'a6   \'a6-- CPL <= 60   -> ELO 1600 (Intermediate)\par
-\'a6   \'a6-- CPL <= 90   -> ELO 1400 (Casual)\par
-\'a6   \'a6-- CPL <= 130  -> ELO 1200 (Beginner)\par
-\'a6   \'a6-- CPL > 130   -> ELO 1000 (Newcomer)\par
-\'a6\par
-\'a2-- [4. Lock-In Phase]\par
-    \'a2-- Enforces calculated target ELO for remaining game matrix\par
-}
-
+Game Starts
+   │
+   ├── [1. Default State]
+   │     └── Bot initializes at default ELO 1200
+   │
+   ├── [2. Live Tracking Loop]
+   │     ├── Monitors opponent moves continuously
+   │     └── Calculates rolling average Centipawn Loss (CPL)
+   │
+   ├── [3. Dynamic Mapping Phase]
+   │     ├── CPL ≤ 15   ➔ ELO 2200 (Master)
+   │     ├── CPL ≤ 25   ➔ ELO 2000 (Expert)
+   │     ├── CPL ≤ 40   ➔ ELO 1800 (Strong Club)
+   │     ├── CPL ≤ 60   ➔ ELO 1600 (Intermediate)
+   │     ├── CPL ≤ 90   ➔ ELO 1400 (Casual)
+   │     ├── CPL ≤ 130  ➔ ELO 1200 (Beginner)
+   │     └── CPL > 130  ➔ ELO 1000 (Newcomer)
+   │
+   └── [4. Lock-In Phase]
+         └── Enforces calculated target ELO for remaining game matrix
 
 ## 4. Core Features
 * **Live CPL Scaling:** Real-time optimization updates that dynamically scale difficulty setting attributes.
