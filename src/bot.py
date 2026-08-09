@@ -1,11 +1,26 @@
+import os
 import sys
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
+
+# 1. Track down the parent folder (Lichess-Inappropriate_BOT)
+src_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(src_dir)
+
+# 2. Tell Python where the 'config' folder lives
+config_folder_path = os.path.join(project_root, "config")
+if config_folder_path not in sys.path:
+    sys.path.insert(0, config_folder_path)
+
+# 3. Add site-packages as a secondary fallback for dependencies
+site_packages_path = r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages"
+if site_packages_path not in sys.path:
+    sys.path.append(site_packages_path)
+
+# 4. Now run imports
 import asyncio
 import json
 import logging
 import httpx
-from config import Config
+from bot_config import Config  # Successfully pulls from \config\bot_config.py
 from game_handler import GameHandler
 
 logging.basicConfig(
