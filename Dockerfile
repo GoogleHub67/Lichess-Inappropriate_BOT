@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install your dependencies
 COPY requirements.get .
-RUN pip install --no-cache-dir -r requirements.get
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy your bot files
 COPY . .
