@@ -1,16 +1,18 @@
 FROM python:3.10-slim
 
 # Install the stockfish engine
-RUN apt-get update && apt-get install -y stockfish
+RUN apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install your dependencies
+# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Force install gunicorn and flask for the web layer
+RUN pip install --no-cache-dir flask gunicorn
 
-# Copy your bot files
+# Copy all project files
 COPY . .
 
-# Run your bot script
-CMD ["python3", "main.py"]
+# Run the web application using Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "app:app"]
