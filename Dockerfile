@@ -15,5 +15,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all project files from GitHub
 COPY . .
 
-# Run the web application container layer using Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "app:app"]
+# Run the web application using Gunicorn with an asynchronous gevent worker class
+CMD ["gunicorn", "--worker-class", "gevent", "--workers", "1", "--bind", "0.0.0.0:10000", "app:app"]
