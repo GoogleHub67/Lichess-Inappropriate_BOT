@@ -60,7 +60,7 @@ class SkillEstimator:
     def has_enough_data(self) -> bool:
         return len(self._cpl_samples) >= Config.CPL_MIN_SAMPLES
 
-    def get_elo(self) -> int:
+        def get_elo(self) -> int:
         if not self.has_enough_data:
             return Config.DEFAULT_ELO
         cpl = self.avg_cpl
@@ -70,7 +70,7 @@ class SkillEstimator:
                 return elo
         return Config.CPL_ELO_MAP[-1][1]
 
-        def throttle_mate_move(self, info, opponent_elo, legal_moves) -> chess.Move:
+    def throttle_mate_move(self, info, opponent_elo, legal_moves) -> chess.Move:
         """
         Directly throttles checkmate sequences based on distance to mate 
         and opponent skill level to simulate human-like dragging or quick kills.
@@ -112,7 +112,7 @@ class SkillEstimator:
                 
             log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player.")
             # FIX: Return the first real chess Move object found in the list
-            return suboptimal_moves[0] 
+            return suboptimal_moves[0]
 
         # Rule 5: Distant Mates (Mate in > 6) -> Play normally, Stockfish will discover it naturally
         log.info(f"Distant Mate-in-{mate_depth}. Processing through normal positional search filters.")
