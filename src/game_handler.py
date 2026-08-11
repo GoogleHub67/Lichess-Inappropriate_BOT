@@ -151,10 +151,12 @@ class GameHandler:
         else:
             self.in_book = False
 
+        # Safety Check: If Stockfish failed to load, extract a single legal move object safely
         if not self.engine:
-            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first random legal move.")
-            if list(self.board.legal_moves):
-                fallback_move = list(self.board.legal_moves)[0]
+            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first legal move.")
+            legal_moves_list = list(self.board.legal_moves)
+            if legal_moves_list:
+                fallback_move = legal_moves_list[0] # Grab the first single move item
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{fallback_move.uci()}")
             return
 
@@ -184,6 +186,7 @@ class GameHandler:
             else:
                 final_move = info["move"]
 
+            # If final_move is missing or returned empty, resolve down to a valid single move object
             if not final_move:
                 final_move = info["move"] if info["move"] else list(self.board.legal_moves)[0]
 
@@ -192,8 +195,9 @@ class GameHandler:
 
         except Exception as e:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
-            if list(self.board.legal_moves):
-                panic_move = list(self.board.legal_moves)[0]
+            legal_moves_list = list(self.board.legal_moves)
+            if legal_moves_list:
+                panic_move = legal_moves_list[0] # Securely isolate a single valid move object item
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _update_cpl(self, board_after_our_move: chess.Board):
