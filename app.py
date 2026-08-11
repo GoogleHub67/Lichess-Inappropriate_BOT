@@ -2,7 +2,6 @@ import threading
 import os
 import sys
 import subprocess
-import traceback
 from flask import Flask
 
 app = Flask(__name__)
@@ -14,7 +13,7 @@ def home():
 def run_bot():
     print("Starting Lichess Bot thread...", flush=True)
     try:
-        # We add capture_output=True to catch the actual error stream
+        # Run the module directly
         result = subprocess.run(
             [sys.executable, "-m", "src.bot"], 
             capture_output=True, 
@@ -28,11 +27,11 @@ def run_bot():
         print(f"STDERR:\n{e.stderr}", flush=True)
     except Exception as e:
         print(f"General error: {e}", flush=True)
-        traceback.print_exc()
 
 if __name__ == "__main__":
     threading.Thread(target=run_bot, daemon=True).start()
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 else:
+    # Triggers when Gunicorn spins up
     threading.Thread(target=run_bot, daemon=True).start()
