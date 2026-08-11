@@ -137,7 +137,7 @@ class GameHandler:
                     entries = list(reader.find_all(self.board))
                     if entries:
                         weights = [e.weight for e in entries]
-                        entry = random.choices(entries, weights=weights, k=1)
+                        entry = random.choices(entries, weights=weights, k=1)[0]
                         book_move = entry.move()
                         log.info(f"Opening Book Move Played: {book_move}")
                         await self.client.post(f"/api/bot/game/{self.game_id}/move/{book_move.uci()}")
@@ -156,7 +156,7 @@ class GameHandler:
             log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first single legal move.")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                fallback_move = legal_moves_list[0] # Properly extracts a single move object item
+                fallback_move = legal_moves_list[0]
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{fallback_move.uci()}")
             return
 
@@ -197,7 +197,7 @@ class GameHandler:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                panic_move = legal_moves_list[0] # Isolates a single move object cleanly to prevent double crashes
+                panic_move = legal_moves_list[0]
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _update_cpl(self, board_after_our_move: chess.Board):
