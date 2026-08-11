@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     LICHESS_TOKEN: str = os.getenv("LICHESS_TOKEN", "YOUR_TOKEN_HERE")
-    STOCKFISH_PATH: str = r"C:\path\to\Stochfish\"
+    STOCKFISH_PATH: str = "/usr/games/stockfish"
     BOOK_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "books", "gm2001.bin"))
 
     CPL_MIN_SAMPLES: int = 3
