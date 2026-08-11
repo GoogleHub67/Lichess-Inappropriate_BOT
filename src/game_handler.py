@@ -190,6 +190,7 @@ class GameHandler:
 
             if self.estimator and hasattr(self.estimator, 'throttle_mate_move'):
                 final_move = self.estimator.throttle_mate_move(
+                    board=self.board,
                     info=info,
                     opponent_elo=current_opponent_elo,
                     legal_moves=list(self.board.legal_moves)
