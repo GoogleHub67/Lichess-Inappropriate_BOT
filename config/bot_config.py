@@ -1,14 +1,14 @@
 import sys
-sys.path.append('../')
 import os
+sys.path.append('../')
 from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Point directly to where Linux apt installs Stockfish
+    # Universal path where Linux installs Stockfish
     STOCKFISH_PATH: str = "/usr/games/stockfish"
     
-    # Force Python to pull your private token from Render's environment panel
+    # Pulls your secure token from Render's Environment dashboard
     LICHESS_TOKEN: str = os.environ.get("LICHESS_TOKEN", "")
     BOOK_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "books", "gm2001.bin"))
 
