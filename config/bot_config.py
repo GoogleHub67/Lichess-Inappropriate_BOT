@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Stockfish is installed via apt in Dockerfile to /usr/games/stockfish
+    # Stockfish is installed via Dockerfile (apt-get to /usr/games/stockfish)
+    # OR via build.sh (downloaded to ./bin/stockfish)
+    # Dockerfile takes priority since it runs first
     STOCKFISH_PATH: str = "/usr/games/stockfish"
     
     # Pulls your secure token from Render's Environment dashboard
