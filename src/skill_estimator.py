@@ -98,21 +98,37 @@ class SkillEstimator:
             return info["move"]
 
         # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
-                # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
         if 4 <= mate_depth <= 6:
-            # 1. Initialize the empty list first
             suboptimal_moves = []
             
-            # 2. Loop through legal moves to filter them
             for move in legal_moves: 
                 if move != info["move"]:
                     suboptimal_moves.append(move)
             
-            # 3. Safe Check: Extract a single move out of the filled list!
             if len(suboptimal_moves) > 0:
-                log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player.")
-                return suboptimal_moves[0]
+                # Evaluate each move and pick the best non-mate alternative
+                best_move = None
+                best_score = float('-inf')
                 
+                for move in suboptimal_moves:
+                    test_board = chess.Board(self.engine.board.fen()) if hasattr(self.engine, 'board') else chess.Board()
+                    test_board.push(move)
+                    try:
+                        info_test = self.engine.analyse(test_board, chess.engine.Limit(depth=8))
+                        score_test = info_test["score"].pov(self.our_color)
+                        cp_test = self._score_to_cp(score_test)
+                        
+                        if cp_test > best_score:
+                            best_score = cp_test
+                            best_move = move
+                    except Exception as e:
+                        log.warning(f"Failed to evaluate move {move}: {e}")
+                        pass
+                
+                if best_move:
+                    log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player with {best_move.uci()}.")
+                    return best_move
+            
             # Rule 4: If there are no good alternatives, just play the original mate path
             log.info("Limited mating paths available. Playing primary sequence.")
             return info["move"]
