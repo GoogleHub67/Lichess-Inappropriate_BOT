@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Exit immediately if a command exits with a non-zero status
 set -o errexit
 
 echo "--- Custom Build Script Started ---"
@@ -11,15 +10,15 @@ pip install -r requirements.txt
 mkdir -p config/assets/books
 mkdir -p bin
 
-# 3. Download the opening book from your GitHub Releases asset
+# 3. Download your opening book from GitHub Releases
 echo "Downloading opening book..."
-curl -L -o config/assets/books/gm2001.bin "https://github.com"
+curl -L -o config/assets/books/gm2001.bin "https://github.com/GoogleHub67/Lichess-Inappropriate_BOT/releases/download/V1.0.0/gm2001.bin"
 
-# 4. Download a precompiled Linux-64 bit Stockfish binary
+# 4. Download a precompiled Linux Ubuntu-64 bit Stockfish binary
 echo "Downloading Linux Stockfish Engine..."
-curl -L -o bin/stockfish "https://github.com"
+curl -L -o bin/stockfish "https://sourceforge.net/projects/stockfish.mirror/files/sf_16.1/stockfish-ubuntu-x86-64-avx2.tar"
 
-# 5. Make the Stockfish binary executable by the server
+# 5. Grant executable permissions to the Linux binary
 chmod +x bin/stockfish
 
 echo "--- Build Script Finished Successfully ---"
