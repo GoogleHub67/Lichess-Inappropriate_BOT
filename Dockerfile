@@ -1,15 +1,16 @@
 FROM python:3.10-slim
 
-# Install the stockfish engine
+# Install the stockfish engine and clean cache
 RUN apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*
+
+# Grant direct execution permissions to the binary file
+RUN chmod +x /usr/games/stockfish
 
 WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Force install gunicorn and flask for the web layer
-RUN pip install --no-cache-dir flask gunicorn
 
 # Copy all project files
 COPY . .
