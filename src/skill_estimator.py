@@ -60,7 +60,7 @@ class SkillEstimator:
     def has_enough_data(self) -> bool:
         return len(self._cpl_samples) >= Config.CPL_MIN_SAMPLES
 
-        def get_elo(self) -> int:
+    def get_elo(self) -> int:
         if not self.has_enough_data:
             return Config.DEFAULT_ELO
         cpl = self.avg_cpl
@@ -99,7 +99,7 @@ class SkillEstimator:
 
         # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
         if 4 <= mate_depth <= 6:
-            # FIX: Initialize as an empty list, NOT a list containing [0]
+            # FIX: Initialize as an empty list, NOT a list containing 0
             suboptimal_moves = []
             for move in legal_moves:
                 if move != info["move"]:
