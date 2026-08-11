@@ -99,9 +99,13 @@ class SkillEstimator:
 
         # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
         if 4 <= mate_depth <= 6:
-            # FIX: Initialize as an empty list, NOT a list containing 0
-            suboptimal_moves = []
-            for move in legal_moves:
+            # 1. You check 'suboptimal_moves' here, but it hasn't even been created yet!
+            if len(suboptimal_moves) > 0:
+                return suboptimal_moves[0]
+            return info["move"] # 2. The code ALWAYS hits this line and leaves immediately!
+            
+            # 3. Everything below this line is "DEAD CODE" and will NEVER run!
+            for move in legal_moves: 
                 if move != info["move"]:
                     suboptimal_moves.append(move)
                     
