@@ -112,21 +112,32 @@ class GameHandler:
                 await self._chat(Config.CHAT_GG)
             return
 
-        old_moves_count = len(self.board.move_stack)
-        
-        self.board = chess.Board()
         moves_str = state.get("moves", "").strip()
-        if moves_str:
-            for uci in moves_str.split():
-                self.board.push_uci(uci)
+        incoming_moves = moves_str.split() if moves_str else []
+        
+        # Re-play moves up to the second-to-last move to capture position BEFORE opponent moved
+        if self.estimator and not self.in_book and self.engine and len(incoming_moves) > len(self.board.move_stack):
+            # Step A: Rebuild board right up to your last action
+            temp_board = chess.Board()
+            for uci in incoming_moves[:-1]:
+                temp_board.push_uci(uci)
+            
+            # Step B: Record evaluation state before opponent took their turn
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, lambda: self.estimator.record_position_before_opponent_move(temp_board))
 
-        new_moves_count = len(self.board.move_stack)
+        # Now, fully catch up the real board layout to the current state
+        self.board = chess.Board()
+        for uci in incoming_moves:
+            self.board.push_uci(uci)
 
+        # Step C: Evaluate how much Centipawn Loss the opponent's newest move caused
         if self.estimator and not self.in_book and self.engine:
-            if new_moves_count > old_moves_count and self.board.turn == self.our_color:
+            if len(incoming_moves) > 0 and self.board.turn == self.our_color:
                 loop = asyncio.get_event_loop()
                 await loop.run_in_executor(None, lambda: self.estimator.record_opponent_move(self.board))
 
+        # Make our move if it is our turn
         if self.board.turn == self.our_color:
             await self._make_move(state)
 
