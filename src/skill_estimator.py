@@ -98,25 +98,24 @@ class SkillEstimator:
             return info["move"]
 
         # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
+                # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
         if 4 <= mate_depth <= 6:
-            # 1. You check 'suboptimal_moves' here, but it hasn't even been created yet!
-            if len(suboptimal_moves) > 0:
-                return suboptimal_moves[0]
-            return info["move"] # 2. The code ALWAYS hits this line and leaves immediately!
+            # 1. Initialize the empty list first
+            suboptimal_moves = []
             
-            # 3. Everything below this line is "DEAD CODE" and will NEVER run!
+            # 2. Loop through legal moves to filter them
             for move in legal_moves: 
                 if move != info["move"]:
                     suboptimal_moves.append(move)
-                    
-            # Rule 4: If there are no good alternatives, just play the original mate path
-            if not suboptimal_moves:
-                log.info("Limited mating paths available. Playing primary sequence.")
-                return info["move"]
+            
+            # 3. Safe Check: Extract a single move out of the filled list!
+            if len(suboptimal_moves) > 0:
+                log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player.")
+                return suboptimal_moves[0]
                 
-            log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player.")
-            # FIX: Return the first real chess Move object found in the list
-            return suboptimal_moves[0]
+            # Rule 4: If there are no good alternatives, just play the original mate path
+            log.info("Limited mating paths available. Playing primary sequence.")
+            return info["move"]
 
         # Rule 5: Distant Mates (Mate in > 6) -> Play normally, Stockfish will discover it naturally
         log.info(f"Distant Mate-in-{mate_depth}. Processing through normal positional search filters.")
