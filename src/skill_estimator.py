@@ -7,10 +7,6 @@ config_folder_path = os.path.join(os.path.dirname(src_dir), "config")
 if config_folder_path not in sys.path:
     sys.path.insert(0, config_folder_path)
 
-site_packages_path = r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages"
-if site_packages_path not in sys.path:
-    sys.path.append(site_packages_path)
-
 # Followed by your original imports...
 from bot_config import Config
 import sys
@@ -74,7 +70,7 @@ class SkillEstimator:
                 return elo
         return Config.CPL_ELO_MAP[-1][1]
 
-    def throttle_mate_move(self, info, opponent_elo, legal_moves) -> chess.Move:
+        def throttle_mate_move(self, info, opponent_elo, legal_moves) -> chess.Move:
         """
         Directly throttles checkmate sequences based on distance to mate 
         and opponent skill level to simulate human-like dragging or quick kills.
@@ -103,20 +99,20 @@ class SkillEstimator:
 
         # Rule 3: Low Elo & Mid Mate Loop (Mate in 4 to 6) -> Drag the game out intentionally
         if 4 <= mate_depth <= 6:
-            # Filter all legal moves that keep the position winning but DO NOT deliver immediate short mates
-            suboptimal_moves = [0]
+            # FIX: Initialize as an empty list, NOT a list containing [0]
+            suboptimal_moves = []
             for move in legal_moves:
-                # Quick validation of options
                 if move != info["move"]:
                     suboptimal_moves.append(move)
                     
-            # Rule 4: If there are limited good alternatives, just play the original mate path
-            if len(suboptimal_moves) < 2:
+            # Rule 4: If there are no good alternatives, just play the original mate path
+            if not suboptimal_moves:
                 log.info("Limited mating paths available. Playing primary sequence.")
                 return info["move"]
                 
             log.info(f"Intentionally dragging out Mate-in-{mate_depth} against {opponent_elo} Elo player.")
-            return suboptimal_moves[0] # Pick the alternative path to prolong the game
+            # FIX: Return the first real chess Move object found in the list
+            return suboptimal_moves[0] 
 
         # Rule 5: Distant Mates (Mate in > 6) -> Play normally, Stockfish will discover it naturally
         log.info(f"Distant Mate-in-{mate_depth}. Processing through normal positional search filters.")
