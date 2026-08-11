@@ -2,6 +2,7 @@ import threading
 import os
 import sys
 import subprocess
+import traceback
 from flask import Flask
 
 app = Flask(__name__)
@@ -13,18 +14,25 @@ def home():
 def run_bot():
     print("Starting Lichess Bot thread...", flush=True)
     try:
-        # Run the script using the same module method mentioned in your README
-        subprocess.run([sys.executable, "-m", "src.bot"], check=True)
+        # We add capture_output=True to catch the actual error stream
+        result = subprocess.run(
+            [sys.executable, "-m", "src.bot"], 
+            capture_output=True, 
+            text=True, 
+            check=True
+        )
+        print(result.stdout, flush=True)
+    except subprocess.CalledProcessError as e:
+        print("--- BOT CRASHED ---", flush=True)
+        print(f"STDOUT:\n{e.stdout}", flush=True)
+        print(f"STDERR:\n{e.stderr}", flush=True)
     except Exception as e:
-        print(f"Bot execution stopped with error: {e}", flush=True)
+        print(f"General error: {e}", flush=True)
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    # Start bot logic on a separate thread so it doesn't block Flask
     threading.Thread(target=run_bot, daemon=True).start()
-    
-    # Render routes traffic to port 10000 by default for Docker
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 else:
-    # This block triggers when Gunicorn loads app:app
     threading.Thread(target=run_bot, daemon=True).start()
