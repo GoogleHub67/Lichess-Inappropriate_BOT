@@ -5,8 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Use standard Linux paths. No 'r', no backslashes, no drive letters.
+    # Point directly to where Linux apt installs Stockfish
     STOCKFISH_PATH: str = "/usr/games/stockfish"
+    
+    # Force Python to pull your private token from Render's environment panel
+    LICHESS_TOKEN: str = os.environ.get("LICHESS_TOKEN", "")
     BOOK_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "books", "gm2001.bin"))
 
     CPL_MIN_SAMPLES: int = 3
