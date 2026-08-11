@@ -130,7 +130,7 @@ class GameHandler:
         if self.board.turn == self.our_color:
             await self._make_move(state)
 
-        async def _make_move(self, state: dict):
+    async def _make_move(self, state: dict):
         if self.in_book and hasattr(Config, 'BOOK_PATH') and os.path.exists(Config.BOOK_PATH):
             try:
                 with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
