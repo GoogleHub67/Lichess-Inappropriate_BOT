@@ -4,3 +4,4 @@ flask
 gunicorn
 python-dotenv
 berserk
+gevent
