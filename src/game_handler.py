@@ -1,18 +1,5 @@
 import os
 import sys
-
-# Direct Python to look inside the \config\ directory
-src_dir = os.path.dirname(os.path.abspath(__file__))
-config_folder_path = os.path.join(os.path.dirname(src_dir), "config")
-if config_folder_path not in sys.path:
-    sys.path.insert(0, config_folder_path)
-
-site_packages_path = r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages"
-if site_packages_path not in sys.path:
-    sys.path.append(site_packages_path)
-
-# Followed by your original imports...
-from bot_config import Config
 import asyncio
 import json
 import logging
@@ -21,6 +8,15 @@ import chess
 import chess.engine
 import chess.polyglot
 import httpx
+
+# Direct Python to look inside the root directory package structures safely
+src_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(src_dir)
+config_folder_path = os.path.join(root_dir, "config")
+if config_folder_path not in sys.path:
+    sys.path.insert(0, config_folder_path)
+
+from bot_config import Config
 from skill_estimator import SkillEstimator
 
 log = logging.getLogger(__name__)
@@ -54,12 +50,14 @@ class GameHandler:
     async def _handle_game_event(self, event: dict):
         etype = event.get("type")
         if etype == "gameFull":
-            me = (await self.client.get("/api/account")).json()["id"]
+            me_resp = await self.client.get("/api/account")
+            me = me_resp.json()["id"]
             white_id = event["white"].get("id", "")
             self.our_color = chess.WHITE if white_id == me else chess.BLACK
             self.estimator = SkillEstimator(self.engine, self.our_color)
             log.info(f"Playing as {'White' if self.our_color == chess.WHITE else 'Black'}")
-            await self._chat(Config.CHAT_GREET)
+            if hasattr(Config, 'CHAT_GREET'):
+                await self._chat(Config.CHAT_GREET)
             await self._apply_state(event.get("state", {}))
         elif etype == "gameState":
             await self._apply_state(event)
@@ -70,8 +68,11 @@ class GameHandler:
             await self._handle_resign()
 
     async def _handle_draw_offer(self):
+        if not self.engine:
+            return
         try:
-            info = self.engine.analyse(self.board, chess.engine.Limit(depth=8))
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(None, lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=8)))
             score = info["score"].pov(self.our_color)
             if score.is_mate() and score.mate() < 0:
                 await self.client.post(f"/api/bot/game/{self.game_id}/draw/yes")
@@ -93,8 +94,11 @@ class GameHandler:
             log.warning(f"Takeback failed: {e}")
 
     async def _handle_resign(self):
+        if not self.engine:
+            return
         try:
-            info = self.engine.analyse(self.board, chess.engine.Limit(depth=8))
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(None, lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=8)))
             score = info["score"].pov(self.our_color)
             if score.is_mate() and score.mate() < 0 and abs(score.mate()) <= 3:
                 await self.client.post(f"/api/bot/game/{self.game_id}/resign")
@@ -104,10 +108,10 @@ class GameHandler:
 
     async def _apply_state(self, state: dict):
         if state.get("status", "started") not in ("started", "created"):
-            await self._chat(Config.CHAT_GG)
+            if hasattr(Config, 'CHAT_GG'):
+                await self._chat(Config.CHAT_GG)
             return
 
-        # Count moves currently on the board before adding the new one
         old_moves_count = len(self.board.move_stack)
         
         self.board = chess.Board()
@@ -118,10 +122,8 @@ class GameHandler:
 
         new_moves_count = len(self.board.move_stack)
 
-        # If the opponent just played a move, record its impact on CPL
-        if self.estimator and not self.in_book:
+        if self.estimator and not self.in_book and self.engine:
             if new_moves_count > old_moves_count and self.board.turn == self.our_color:
-                # Wrap in executor because engine analysis is blocking
                 loop = asyncio.get_event_loop()
                 await loop.run_in_executor(None, lambda: self.estimator.record_opponent_move(self.board))
 
@@ -129,22 +131,14 @@ class GameHandler:
             await self._make_move(state)
 
     async def _make_move(self, state: dict):
-        """
-        Analyzes the position, handles opening book lookups, and processes 
-        the final selected move through the endgame mate-throttling matrix.
-        """
-        # 1. Handle Opening Book if applicable
-        if self.in_book:
+        if self.in_book and hasattr(Config, 'BOOK_PATH') and os.path.exists(Config.BOOK_PATH):
             try:
                 with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
                     entries = list(reader.find_all(self.board))
                     if entries:
-                        # Pick a book move based on weights
-                        import random
                         weights = [e.weight for e in entries]
                         entry = random.choices(entries, weights=weights, k=1)[0]
                         book_move = entry.move()
-                        
                         log.info(f"Opening Book Move Played: {book_move}")
                         await self.client.post(f"/api/bot/game/{self.game_id}/move/{book_move.uci()}")
                         return
@@ -154,17 +148,23 @@ class GameHandler:
             except Exception as e:
                 self.in_book = False
                 log.warning(f"Failed to read opening book ({e}). Falling back to engine.")
+        else:
+            self.in_book = False
 
-        # 2. Live Engine Position Analysis
+        if not self.engine:
+            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first random legal move.")
+            if list(self.board.legal_moves):
+                fallback_move = list(self.board.legal_moves)[0]
+                await self.client.post(f"/api/bot/game/{self.game_id}/move/{fallback_move.uci()}")
+            return
+
         try:
-            # Wrap engine analysis in an executor to avoid blocking the main async loop
             loop = asyncio.get_event_loop()
             info = await loop.run_in_executor(
                 None, 
                 lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=14))
             )
             
-            # 3. Capture Position Baseline for Opponent CPL evaluation on the next turn
             if self.estimator:
                 score_before = info["score"].pov(self.our_color)
                 if score_before.is_mate():
@@ -172,11 +172,10 @@ class GameHandler:
                 else:
                     self.estimator._last_eval = score_before.score()
 
-            # 4. Get Current Rolling Opponent Elo Context
-            current_opponent_elo = self.estimator.get_elo() if self.estimator else Config.DEFAULT_ELO
+            default_elo = getattr(Config, 'DEFAULT_ELO', 1500)
+            current_opponent_elo = self.estimator.get_elo() if self.estimator else default_elo
 
-            # 5. Filter Move Selection via the Endgame Cat-and-Mouse Matrix
-            if self.estimator:
+            if self.estimator and hasattr(self.estimator, 'throttle_mate_move'):
                 final_move = self.estimator.throttle_mate_move(
                     info=info,
                     opponent_elo=current_opponent_elo,
@@ -185,22 +184,21 @@ class GameHandler:
             else:
                 final_move = info["move"]
 
-            # 6. Safety Check: Fallback if final_move resolution runs into issues
             if not final_move:
-                final_move = list(self.board.legal_moves)[0]
+                final_move = info["move"] if info["move"] else list(self.board.legal_moves)[0]
 
-            # 7. Post the calculated move directly to the Lichess API endpoint
             log.info(f"Sending move to Lichess: {final_move.uci()} (Target Elo Context: {current_opponent_elo})")
             await self.client.post(f"/api/bot/game/{self.game_id}/move/{final_move.uci()}")
 
         except Exception as e:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
-            # Panic mode fallback: try to play any legal move to prevent losing on time
             if list(self.board.legal_moves):
                 panic_move = list(self.board.legal_moves)[0]
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _update_cpl(self, board_after_our_move: chess.Board):
+        if not self.estimator:
+            return
         try:
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(
@@ -211,6 +209,8 @@ class GameHandler:
             log.warning(f"CPL update failed: {e}")
 
     def _book_move(self) -> chess.Move | None:
+        if not hasattr(Config, 'BOOK_PATH'):
+            return None
         try:
             with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
                 entries = list(reader.find_all(self.board))
@@ -233,11 +233,14 @@ class GameHandler:
             return None
 
     async def _stockfish_move(self, elo: int, state: dict) -> chess.Move | None:
+        if not self.engine:
+            return None
         try:
-            self.engine.configure({
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, lambda: self.engine.configure({
                 "UCI_LimitStrength": True,
                 "UCI_Elo": elo
-            })
+            }))
             wtime = state.get("wtime", 0)
             btime = state.get("btime", 0)
             if wtime == 0 and btime == 0:
@@ -249,9 +252,7 @@ class GameHandler:
                     white_inc=state.get("winc", 0) / 1000,
                     black_inc=state.get("binc", 0) / 1000,
                 )
-            result = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: self.engine.play(self.board, limit)
-            )
+            result = await loop.run_in_executor(None, lambda: self.engine.play(self.board, limit))
             log.info(f"Stockfish ELO {elo}: {result.move.uci()}")
             return result.move
         except Exception as e:
@@ -273,15 +274,22 @@ class GameHandler:
             log.warning(f"Chat failed: {e}")
 
     async def _start_engine(self):
-        loop = asyncio.get_event_loop()
-        self.engine = await loop.run_in_executor(
-            None, lambda: chess.engine.SimpleEngine.popen_uci(Config.STOCKFISH_PATH)
-        )
-        log.info("Engine started")
+        try:
+            log.info(f"Spawning Stockfish engine from: {Config.STOCKFISH_PATH}")
+            loop = asyncio.get_event_loop()
+            self.engine = await loop.run_in_executor(
+                None, lambda: chess.engine.SimpleEngine.popen_uci(Config.STOCKFISH_PATH)
+            )
+            log.info("--- STOCKFISH ENGINE LAUNCHED SUCCESSFULLY ---")
+        except Exception as e:
+            log.error(f"Engine failed to start: {e}")
+            self.engine = None
 
     async def _stop_engine(self):
         if self.engine:
             try:
-                self.engine.quit()
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, self.engine.quit)
+                log.info("Engine stopped")
             except Exception:
                 pass
