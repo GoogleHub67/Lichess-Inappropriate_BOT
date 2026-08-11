@@ -130,14 +130,14 @@ class GameHandler:
         if self.board.turn == self.our_color:
             await self._make_move(state)
 
-    async def _make_move(self, state: dict):
+        async def _make_move(self, state: dict):
         if self.in_book and hasattr(Config, 'BOOK_PATH') and os.path.exists(Config.BOOK_PATH):
             try:
                 with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
                     entries = list(reader.find_all(self.board))
                     if entries:
                         weights = [e.weight for e in entries]
-                        entry = random.choices(entries, weights=weights, k=1)[0]
+                        entry = random.choices(entries, weights=weights, k=1)
                         book_move = entry.move()
                         log.info(f"Opening Book Move Played: {book_move}")
                         await self.client.post(f"/api/bot/game/{self.game_id}/move/{book_move.uci()}")
@@ -151,12 +151,12 @@ class GameHandler:
         else:
             self.in_book = False
 
-        # Safety Check: If Stockfish failed to load, extract a single legal move object safely
+        # Emergency structural fallback if Stockfish isn't loaded correctly
         if not self.engine:
-            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first legal move.")
+            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first single legal move.")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                fallback_move = legal_moves_list[0] # Grab the first single move item
+                fallback_move = legal_moves_list[0] # Properly extracts a single move object item
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{fallback_move.uci()}")
             return
 
@@ -186,7 +186,7 @@ class GameHandler:
             else:
                 final_move = info["move"]
 
-            # If final_move is missing or returned empty, resolve down to a valid single move object
+            # Securely extract single move object if tactical evaluations fail
             if not final_move:
                 final_move = info["move"] if info["move"] else list(self.board.legal_moves)[0]
 
@@ -197,7 +197,7 @@ class GameHandler:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                panic_move = legal_moves_list[0] # Securely isolate a single valid move object item
+                panic_move = legal_moves_list[0] # Isolates a single move object cleanly to prevent double crashes
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _update_cpl(self, board_after_our_move: chess.Board):
