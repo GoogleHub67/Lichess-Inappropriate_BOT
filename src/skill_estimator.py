@@ -70,7 +70,7 @@ class SkillEstimator:
                 return elo
         return Config.CPL_ELO_MAP[-1][1]
 
-    def throttle_mate_move(self, info, opponent_elo, legal_moves) -> chess.Move:
+    def throttle_mate_move(self, board: chess.Board, info, opponent_elo, legal_moves) -> chess.Move:
         """
         Directly throttles checkmate sequences based on distance to mate 
         and opponent skill level to simulate human-like dragging or quick kills.
@@ -111,7 +111,7 @@ class SkillEstimator:
                 best_score = float('-inf')
                 
                 for move in suboptimal_moves:
-                    test_board = chess.Board(self.engine.board.fen()) if hasattr(self.engine, 'board') else chess.Board()
+                    test_board = chess.Board(board.fen())  # Copy current board
                     test_board.push(move)
                     try:
                         info_test = self.engine.analyse(test_board, chess.engine.Limit(depth=8))
