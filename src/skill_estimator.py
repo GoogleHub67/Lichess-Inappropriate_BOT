@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Direct Python to look inside the \config\ directory
+# Direct Python to look inside the /config/ directory (Linux paths use forward slashes safely)
 src_dir = os.path.dirname(os.path.abspath(__file__))
 config_folder_path = os.path.join(os.path.dirname(src_dir), "config")
 if config_folder_path not in sys.path:
@@ -9,8 +9,6 @@ if config_folder_path not in sys.path:
 
 # Followed by your original imports...
 from bot_config import Config
-import sys
-sys.path.append(r"C:\Users\Aarav\AppData\Local\Programs\Python\Python311\Lib\site-packages")
 import chess
 import chess.engine
 import logging
