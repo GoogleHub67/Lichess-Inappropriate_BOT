@@ -10,20 +10,16 @@ import xml.etree.ElementTree as ET
 src_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(src_dir)
 
-# 2. Tell Python where the 'config' folder lives
+# 2. Tell Python where the 'config' folder lives (Linux safe path joining)
 config_folder_path = os.path.join(project_root, "config")
 if config_folder_path not in sys.path:
     sys.path.insert(0, config_folder_path)
 
-# 3. Add site-packages as a secondary fallback for dependencies
-site_packages_path = r"C:\Users\{your-username}\AppData\Local\Programs\Python\Python311\Lib\site-packages"
-if site_packages_path not in sys.path:
-    sys.path.append(site_packages_path)
-
-# 4. Now run imports
+# 3. Now run imports
 from bot_config import Config  # Successfully pulls from \config\bot_config.py
 from game_handler import GameHandler
 
+# Configure logging to output to stdout for Render logs to capture it smoothly
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -111,7 +107,7 @@ class LichessBot:
             
             # Catch bad authentication states early to prevent runtime KeyError crashes
             if response.status_code == 401:
-                log.critical("CRITICAL: Lichess API Token rejected! (401 Unauthorized). Verify your token string in the .env file.")
+                log.critical("CRITICAL: Lichess API Token rejected! (401 Unauthorized). Verify your token string in the environment variables.")
                 return
 
             profile = response.json()
