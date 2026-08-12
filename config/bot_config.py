@@ -1,4 +1,3 @@
-import sys
 import os
 from dotenv import load_dotenv
 
@@ -12,9 +11,11 @@ class Config:
     # Pulls your secure token from Render's Environment dashboard
     LICHESS_TOKEN: str = os.environ.get("LICHESS_TOKEN", "")
     
-    # Secure, platform-agnostic absolute path resolution for the opening book
+    # 🟢 FIX: Secure, platform-agnostic absolute path resolution for the opening book
+    # Steps out of the 'config' folder into the root directory to find 'assets'
     _current_dir = os.path.dirname(os.path.abspath(__file__))
-    BOOK_PATH: str = os.path.abspath(os.path.join(_current_dir, "assets", "books", "gm2001.bin"))
+    _project_root = os.path.dirname(_current_dir)
+    BOOK_PATH: str = os.path.abspath(os.path.join(_project_root, "assets", "books", "gm2001.bin"))
 
     CPL_MIN_SAMPLES: int = 3
     DEFAULT_ELO: int = 1320
