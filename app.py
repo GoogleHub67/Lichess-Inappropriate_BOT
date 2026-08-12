@@ -20,6 +20,7 @@ from bot import LichessBot
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
+# 🟢 CRITICAL: This variable name MUST match the second half of the gunicorn command (app:app)
 app = Flask(__name__)
 
 @app.route('/')
@@ -27,7 +28,6 @@ def home():
     return "♟️ Chess Bot Server is Alive and Healthy!"
 
 def run_bot_background():
-    """Isolated thread loop wrapper with built-in Lichess-mandated rate protection cooling."""
     log.info("🚀 Launching Lichess Bot stream listener in background thread...")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -37,13 +37,11 @@ def run_bot_background():
     except Exception as e:
         log.error(f"❌ Background bot execution crashed: {e}")
 
-# 🟢 THE 429 FIX: Use a unique environment flag check to prevent Gunicorn 
-# threads from spawning duplicate, overlapping network listener connections!
-# 🟢 THE 429 GATEKEEPER: Forces Gunicorn to ONLY launch ONE background bot loop
+# The 429 Gatekeeper check
 if not os.environ.get("WERKZEUG_RUN_MAIN") and threading.active_count() <= 2:
     def delayed_start():
         import time
-        time.sleep(2) # Gives zombie connections on Lichess time to fully disconnect first
+        time.sleep(2)
         bot_thread = threading.Thread(target=run_bot_background, daemon=True)
         bot_thread.start()
 
