@@ -1,18 +1,20 @@
 import sys
 import os
-sys.path.append('../')
 from dotenv import load_dotenv
+
+# Automatically load environmental variables from .env if running locally
 load_dotenv()
 
 class Config:
-    # Stockfish is installed via Dockerfile (apt-get to /usr/games/stockfish)
-    # OR via build.sh (downloaded to ./bin/stockfish)
-    # Dockerfile takes priority since it runs first
+    # Stockfish path as configured in your working Dockerfile runtime
     STOCKFISH_PATH: str = "/usr/games/stockfish"
     
     # Pulls your secure token from Render's Environment dashboard
     LICHESS_TOKEN: str = os.environ.get("LICHESS_TOKEN", "")
-    BOOK_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "books", "gm2001.bin"))
+    
+    # Secure, platform-agnostic absolute path resolution for the opening book
+    _current_dir = os.path.dirname(os.path.abspath(__file__))
+    BOOK_PATH: str = os.path.abspath(os.path.join(_current_dir, "assets", "books", "gm2001.bin"))
 
     CPL_MIN_SAMPLES: int = 3
     DEFAULT_ELO: int = 1320
