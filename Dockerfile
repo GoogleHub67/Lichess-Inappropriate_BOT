@@ -19,11 +19,17 @@ RUN uname -m >> architecture.log
 
 # Download Stockfish from GitHub releases and extract it
 RUN wget -O stockfish.tar --no-check-certificate https://github.com/GoogleHub67/Lichess-Inappropriate_BOT/releases/download/V1.0.0/stockfish-ubuntu-x86-64-avx2.tar && \
+    echo "Downloaded stockfish.tar" && \
     mkdir -p stockfish_dir && \
-    tar -xvf stockfish.tar -C stockfish_dir --wildcards '*/stockfish' --strip-components=1 && \
-    mv stockfish_dir/stockfish /app/stockfish && \
+    tar -xvf stockfish.tar -C stockfish_dir && \
+    echo "Extracted stockfish.tar contents" && \
+    ls -l stockfish_dir && \
+    mv stockfish_dir/stockfish* /app/stockfish && \
+    echo "Moved stockfish to /app" && \
     rm -rf stockfish_dir stockfish.tar && \
-    chmod +x stockfish
+    echo "Cleaned up files" && \
+    chmod +x stockfish && \
+    echo "Set executable permissions for /app/stockfish"
 
 # Verify if the Stockfish binary exists
 RUN if [ ! -f "$STOCKFISH_PATH" ]; then echo "Stockfish binary not found at $STOCKFISH_PATH"; exit 1; fi
