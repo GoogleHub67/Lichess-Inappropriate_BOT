@@ -142,7 +142,7 @@ class GameHandler:
         if self.board.turn == self.our_color:
             await self._make_move(state)
 
-    async def _make_move(self, state: dict):
+        async def _make_move(self, state: dict):
         if self.in_book and hasattr(Config, 'BOOK_PATH') and os.path.exists(Config.BOOK_PATH):
             try:
                 with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
@@ -167,7 +167,7 @@ class GameHandler:
             self.in_book = False
 
         if not self.engine:
-            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first single legal move.")
+            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first legal move.")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
                 fallback_move = legal_moves_list[0]
@@ -175,40 +175,60 @@ class GameHandler:
             return
 
         try:
+            default_elo = getattr(Config, 'DEFAULT_ELO', 1320)
+            current_opponent_elo = self.estimator.get_elo() if self.estimator else default_elo
+
             loop = asyncio.get_event_loop()
+            
+            # Reconfigure engine dynamically to scale difficulty parameters cleanly
+            await loop.run_in_executor(
+                None, 
+                lambda: self.engine.configure({
+                    "UCI_LimitStrength": True, 
+                    "UCI_Elo": current_opponent_elo
+                })
+            )
+
+            # Process analysis safely
             info = await loop.run_in_executor(
                 None, 
                 lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=14))
             )
             
+            # Safe object extraction mapping to verify Centipawn Loss evaluation steps
             if self.estimator:
-                score_before = info["score"].pov(self.our_color)
-                if score_before.is_mate():
-                    self.estimator._last_eval = 10000.0 if score_before.mate() > 0 else -10000.0
-                else:
-                    self.estimator._last_eval = float(score_before.score() or 0.0)
+                score_before = info.get("score") if isinstance(info, dict) else getattr(info, "score", None)
+                if score_before:
+                    pov_score = score_before.pov(self.our_color)
+                    if pov_score.is_mate():
+                        self.estimator._last_eval = 10000.0 if pov_score.mate() > 0 else -10000.0
+                    else:
+                        self.estimator._last_eval = float(pov_score.score() or 0.0)
 
-            default_elo = getattr(Config, 'DEFAULT_ELO', 1500)
-            current_opponent_elo = self.estimator.get_elo() if self.estimator else default_elo
+            # Safely fetch the best move attribute independent of data structure types
+            engine_move = info.get("move") if isinstance(info, dict) else getattr(info, "move", None)
 
             if self.estimator and hasattr(self.estimator, 'throttle_mate_move'):
+                # Package a backup dictionary to satisfy legacy check hooks safely
+                mock_info = {"move": engine_move, "score": info.get("score") if isinstance(info, dict) else getattr(info, "score", None)}
                 final_move = self.estimator.throttle_mate_move(
                     board=self.board,
-                    info=info,
+                    info=mock_info,
                     opponent_elo=current_opponent_elo,
                     legal_moves=list(self.board.legal_moves)
                 )
             else:
-                final_move = info["move"]
+                final_move = engine_move
 
+            # If positional lookups yield null data, fallback to native engine selections safely
             if not final_move:
-                final_move = info["move"] if info["move"] else list(self.board.legal_moves)[0]
+                final_move = engine_move if engine_move else list(self.board.legal_moves)[0]
 
             log.info(f"Sending move to Lichess: {final_move.uci()} (Target Elo Context: {current_opponent_elo})")
             await self.client.post(f"/api/bot/game/{self.game_id}/move/{final_move.uci()}")
 
         except Exception as e:
-            log.error(f"Critical breakdown inside _make_move processing sequence: {e}")
+            log.error(f"Critical breakdown inside _make_move processing sequence: {e}", exc_info=True)
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
                 panic_move = legal_moves_list[0]
