@@ -2,10 +2,18 @@ import os
 import sys
 import asyncio
 import logging
+
+# 🟢 FIX: Path injection MUST be at the top before importing custom modules
+src_dir = os.path.dirname(os.path.abspath(__file__))
+config_folder_path = os.path.join(src_dir, "config")
+if config_folder_path not in sys.path:
+    sys.path.insert(0, config_folder_path)
+
+# Standard chess and project module imports
 import chess
 import chess.engine
 from bot_config import Config
-from bot import LichessBot  # Assumes your LichessBot class lives inside bot.py
+from bot import LichessBot  
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
@@ -77,8 +85,8 @@ async def run_diagnostics():
     log.info(f"ELO             {'✓ PASS' if elo_pass else '✗ FAIL'}")
     log.info(f"BOOK            {'✓ PASS' if book_pass else '✗ FAIL'}")
 
-    # 🟢 FIX: Only fail deployment if the engine itself breaks. 
-    # If the opening book is missing, treat it as a warning and proceed anyway!
+    # Only crash deployment if Stockfish itself breaks.
+    # A missing opening book is non-critical and will proceed anyway.
     if not path_pass or not startup_pass or not elo_pass:
         log.error("\n✗ Critical diagnostics failed. Render environment is missing Stockfish or misconfigured.")
         sys.exit(1)
@@ -94,7 +102,7 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_diagnostics())
     
-    # Intentionally hand over the process cleanly to the main listener loop
+    # Hand over control to the main bot streaming event loop
     bot = LichessBot()
     try:
         asyncio.run(bot.start())
