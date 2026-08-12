@@ -39,11 +39,11 @@ def run_bot_background():
 
 # 🟢 THE 429 FIX: Use a unique environment flag check to prevent Gunicorn 
 # threads from spawning duplicate, overlapping network listener connections!
+# 🟢 THE 429 GATEKEEPER: Forces Gunicorn to ONLY launch ONE background bot loop
 if not os.environ.get("WERKZEUG_RUN_MAIN") and threading.active_count() <= 2:
-    # We also inject a tiny initial safety delay to let previous zombie worker tasks clear out
     def delayed_start():
         import time
-        time.sleep(2)
+        time.sleep(2) # Gives zombie connections on Lichess time to fully disconnect first
         bot_thread = threading.Thread(target=run_bot_background, daemon=True)
         bot_thread.start()
 
