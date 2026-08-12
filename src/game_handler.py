@@ -44,6 +44,11 @@ class GameHandler:
                         if line.strip():
                             event = json.loads(line)
                             await self._handle_game_event(event)
+            except asyncio.CancelledError:
+                # Handle graceful exit when bot.py cancels the game task on gameFinish
+                if hasattr(Config, 'CHAT_GG'):
+                    await self._chat(Config.CHAT_GG)
+                raise
             finally:
                 await self._stop_engine()
 
@@ -108,8 +113,6 @@ class GameHandler:
 
     async def _apply_state(self, state: dict):
         if state.get("status", "started") not in ("started", "created"):
-            if hasattr(Config, 'CHAT_GG'):
-                await self._chat(Config.CHAT_GG)
             return
 
         moves_str = state.get("moves", "").strip()
@@ -117,21 +120,19 @@ class GameHandler:
         
         # Re-play moves up to the second-to-last move to capture position BEFORE opponent moved
         if self.estimator and not self.in_book and self.engine and len(incoming_moves) > len(self.board.move_stack):
-            # Step A: Rebuild board right up to your last action
             temp_board = chess.Board()
             for uci in incoming_moves[:-1]:
                 temp_board.push_uci(uci)
             
-            # Step B: Record evaluation state before opponent took their turn
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, lambda: self.estimator.record_position_before_opponent_move(temp_board))
 
-        # Now, fully catch up the real board layout to the current state
+        # Fully catch up the real board layout to the current state
         self.board = chess.Board()
         for uci in incoming_moves:
             self.board.push_uci(uci)
 
-        # Step C: Evaluate how much Centipawn Loss the opponent's newest move caused
+        # Evaluate how much Centipawn Loss the opponent's newest move caused
         if self.estimator and not self.in_book and self.engine:
             if len(incoming_moves) > 0 and self.board.turn == self.our_color:
                 loop = asyncio.get_event_loop()
@@ -156,13 +157,15 @@ class GameHandler:
                     else:
                         self.in_book = False
                         log.info("Opening book exhausted. Switching to live engine analysis.")
+                        if hasattr(Config, 'CHAT_OFF_BOOK') and not self.off_book_notified:
+                            await self._chat(Config.CHAT_OFF_BOOK)
+                            self.off_book_notified = True
             except Exception as e:
                 self.in_book = False
                 log.warning(f"Failed to read opening book ({e}). Falling back to engine.")
         else:
             self.in_book = False
 
-        # Emergency structural fallback if Stockfish isn't loaded correctly
         if not self.engine:
             log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first single legal move.")
             legal_moves_list = list(self.board.legal_moves)
@@ -181,9 +184,9 @@ class GameHandler:
             if self.estimator:
                 score_before = info["score"].pov(self.our_color)
                 if score_before.is_mate():
-                    self.estimator._last_eval = float('inf') if score_before.mate() > 0 else float('-inf')
+                    self.estimator._last_eval = 10000.0 if score_before.mate() > 0 else -10000.0
                 else:
-                    self.estimator._last_eval = score_before.score()
+                    self.estimator._last_eval = float(score_before.score() or 0.0)
 
             default_elo = getattr(Config, 'DEFAULT_ELO', 1500)
             current_opponent_elo = self.estimator.get_elo() if self.estimator else default_elo
@@ -198,7 +201,6 @@ class GameHandler:
             else:
                 final_move = info["move"]
 
-            # Securely extract single move object if tactical evaluations fail
             if not final_move:
                 final_move = info["move"] if info["move"] else list(self.board.legal_moves)[0]
 
@@ -211,74 +213,6 @@ class GameHandler:
             if legal_moves_list:
                 panic_move = legal_moves_list[0]
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
-
-    async def _update_cpl(self, board_after_our_move: chess.Board):
-        if not self.estimator:
-            return
-        try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                lambda: self.estimator.record_position_before_opponent_move(board_after_our_move)
-            )
-        except Exception as e:
-            log.warning(f"CPL update failed: {e}")
-
-    def _book_move(self) -> chess.Move | None:
-        if not hasattr(Config, 'BOOK_PATH'):
-            return None
-        try:
-            with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
-                entries = list(reader.find_all(self.board))
-                if not entries:
-                    return None
-                total = sum(e.weight for e in entries)
-                r = random.uniform(0, total)
-                cumulative = 0
-                for entry in entries:
-                    cumulative += entry.weight
-                    if r <= cumulative:
-                        return entry.move
-                return entries[0].move
-        except FileNotFoundError:
-            log.warning(f"Book not found: {Config.BOOK_PATH}")
-            self.in_book = False
-            return None
-        except Exception as e:
-            log.warning(f"Book error: {e}")
-            return None
-
-    async def _stockfish_move(self, elo: int, state: dict) -> chess.Move | None:
-        if not self.engine:
-            return None
-        try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, lambda: self.engine.configure({
-                "UCI_LimitStrength": True,
-                "UCI_Elo": elo
-            }))
-            wtime = state.get("wtime", 0)
-            btime = state.get("btime", 0)
-            if wtime == 0 and btime == 0:
-                limit = chess.engine.Limit(depth=8)
-            else:
-                limit = chess.engine.Limit(
-                    white_clock=wtime / 1000,
-                    black_clock=btime / 1000,
-                    white_inc=state.get("winc", 0) / 1000,
-                    black_inc=state.get("binc", 0) / 1000,
-                )
-            result = await loop.run_in_executor(None, lambda: self.engine.play(self.board, limit))
-            log.info(f"Stockfish ELO {elo}: {result.move.uci()}")
-            return result.move
-        except Exception as e:
-            log.error(f"Stockfish error: {e}")
-            return None
-
-    async def _send_move(self, uci: str):
-        r = await self.client.post(f"/api/bot/game/{self.game_id}/move/{uci}")
-        r.raise_for_status()
-        log.info(f"Sent: {uci}")
 
     async def _chat(self, message: str, room: str = "player"):
         try:
