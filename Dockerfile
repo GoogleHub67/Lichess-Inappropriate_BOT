@@ -1,19 +1,34 @@
-FROM python:3.10-slim
+# Use an appropriate base image
+FROM python:3.9-slim
 
-# Install the stockfish engine and clear out package manager cache
-RUN apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*
+# Install necessary dependencies
+RUN apt-get update && \
+    apt-get install -y wget libc6-dev
 
-# Force give execution permission flags to the Stockfish binary
-RUN chmod +x /usr/games/stockfish
-
+# Set the working directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
+# Copy the project files to the working directory
+COPY . /app
+
+# Set environment variable for Stockfish path
+ENV STOCKFISH_PATH=/app/stockfish
+
+# Check the architecture and log it
+RUN uname -m >> architecture.log
+
+# Download Stockfish from GitHub releases
+RUN wget -O stockfish https://github.com/GoogleHub67/Lichess-Inappropriate-BOT/releases/download/V1.0.0/stockfish-ubuntu-x86-64-avx2.tar && \
+    chmod +x stockfish
+
+# Verify if the Stockfish binary exists
+RUN if [ ! -f "$STOCKFISH_PATH" ]; then echo "Stockfish binary not found at $STOCKFISH_PATH"; exit 1; fi
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all project files from GitHub
-COPY . .
+# Expose the port if needed (if your bot runs a web server)
+EXPOSE 5000
 
-# Run the web application using Gunicorn with an asynchronous gevent worker class
-CMD ["gunicorn", "--worker-class", "gevent", "--workers", "1", "--bind", "0.0.0.0:10000", "app:app"]
+# Command to run the diagnostic script
+CMD ["python", "error.py"]
