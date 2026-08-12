@@ -1,49 +1,19 @@
-# Use an appropriate base image
-FROM python:3.9-slim
+FROM python:3.10-slim
 
-# Install necessary dependencies
-RUN apt-get update && \
-    apt-get install -y wget tar libc6-dev
+# Install the stockfish engine and clear out package manager cache
+RUN apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Force give execution permission flags to the Stockfish binary
+RUN chmod +x /usr/games/stockfish
+
 WORKDIR /app
 
-# Copy the project files to the working directory
-COPY . /app
-
-# Set environment variable for Stockfish path
-ENV STOCKFISH_PATH=/app/stockfish
-
-# Check the architecture and log it
-RUN uname -m >> architecture.log && \
-    echo "Current architecture:" && \
-    cat architecture.log
-
-# Download and extract Stockfish from GitHub releases
-RUN wget -O stockfish.tar --no-check-certificate https://github.com/GoogleHub67/Lichess-Inappropriate_BOT/releases/download/V1.0.0/stockfish-ubuntu-x86-64-avx2.tar && \
-    echo "Downloaded stockfish.tar" && \
-    tar -xvf stockfish.tar && \
-    echo "Extracted contents of stockfish.tar" && \
-    ls -l && \
-    mv stockfish-ubuntu-x86-64-avx2/stockfish /app/stockfish && \
-    echo "Moved stockfish to /app" && \
-    rm -rf stockfish-ubuntu-x86-64-avx2 stockfish.tar && \
-    echo "Cleaned up files" && \
-    chmod +x stockfish && \
-    echo "Set executable permissions for /app/stockfish"
-
-# Verify if the Stockfish binary exists
-RUN if [ ! -f "$STOCKFISH_PATH" ]; then \
-        echo "Stockfish binary not found at $STOCKFISH_PATH"; \
-        exit 1; \
-    fi && \
-    echo "Verified Stockfish binary at $STOCKFISH_PATH"
-
-# Install Python dependencies
+# Install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port if needed (if your bot runs a web server)
-EXPOSE 5000
+# Copy all project files from GitHub
+COPY . .
 
-# Command to run the diagnostic script
-CMD ["python", "error.py"]
+# Run the web application using Gunicorn with an asynchronous gevent worker class
+CMD ["gunicorn", "--worker-class", "gevent", "--workers", "1", "--bind", "0.0.0.0:10000", "app:app"]
