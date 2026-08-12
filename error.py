@@ -41,16 +41,18 @@ def test_stockfish_path():
             "/usr/games/stockfish",
             "/usr/bin/stockfish",
             "stockfish",
-            "./bin/stockfish",
-            "/app/bin/stockfish"
+            "./stockfish",
+            "/app/stockfish"
         ]
         
         log.info("Checking alternative paths...")
         for alt in alternatives:
-            if os.path.exists(alt):
-                log.info(f"✓ Found Stockfish at: {alt}")
-                return alt
+            full_path = os.path.join(os.getcwd(), alt)
+            if os.path.exists(full_path):
+                log.info(f"✓ Found Stockfish at: {full_path}")
+                return full_path
         
+        log.error("✗ Stockfish binary NOT found in any alternative paths")
         return False
 
 def test_engine_startup():
@@ -64,11 +66,11 @@ def test_engine_startup():
         # Test a simple analysis
         board = chess.Board()
         log.info("Testing engine analysis on starting position...")
-        info = engine.analyse(board, chess.engine.Limit(depth=5))
+        result = engine.play(board, chess.engine.Limit(depth=5))
         
-        if info and "move" in info:
-            log.info(f"✓ Engine analysis works. Best move: {info['move']}")
-            log.info(f"  Score: {info['score']}")
+        if result and result.move:
+            log.info(f"✓ Engine analysis works. Best move: {result.move}")
+            log.info(f"  Score: {result.info.get('score', 'Unknown')}")
         else:
             log.error("✗ Engine analysis returned no move")
             return False
@@ -106,18 +108,16 @@ def test_elo_configuration():
         engine = chess.engine.SimpleEngine.popen_uci(Config.STOCKFISH_PATH)
         
         # Test configuration
-        engine.configure({
-            "UCI_LimitStrength": True,
-            "UCI_Elo": 1320
-        })
+        engine.configure({"UCI_LimitStrength": True})
+        engine.configure({"UCI_Elo": 1320})
         log.info("✓ Engine accepted UCI_LimitStrength and UCI_Elo settings")
         
         # Analyze with ELO limit
         board = chess.Board()
-        info = engine.analyse(board, chess.engine.Limit(depth=10))
+        result = engine.play(board, chess.engine.Limit(depth=10))
         
-        if info and "move" in info:
-            log.info(f"✓ Engine analysis with ELO limit works. Move: {info['move']}")
+        if result and result.move:
+            log.info(f"✓ Engine analysis with ELO limit works. Move: {result.move}")
         else:
             log.error("✗ Engine analysis with ELO limit failed")
             return False
@@ -137,10 +137,15 @@ def main():
     results = {}
     
     log.info("\n[1/4] Testing Stockfish path...")
-    results['path'] = test_stockfish_path()
+    stockfish_path_result = test_stockfish_path()
+    results['path'] = stockfish_path_result
     
-    log.info("\n[2/4] Testing engine startup...")
-    results['startup'] = test_engine_startup()
+    # If Stockfish path is valid, test engine startup
+    if stockfish_path_result:
+        Config.STOCKFISH_PATH = stockfish_path_result
+        results['startup'] = test_engine_startup()
+    else:
+        results['startup'] = False
     
     log.info("\n[3/4] Testing opening book...")
     results['book'] = test_opening_book()
