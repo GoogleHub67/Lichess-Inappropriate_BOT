@@ -6,27 +6,19 @@ import logging
 import httpx
 import xml.etree.ElementTree as ET
 
-# 1. Track down the parent folder (Lichess-Inappropriate_BOT)
+# Track down folder environments safely
 src_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(src_dir)
-
-# 2. Tell Python where the 'config' folder lives (Linux safe path joining)
 config_folder_path = os.path.join(project_root, "config")
 if config_folder_path not in sys.path:
     sys.path.insert(0, config_folder_path)
 
-# 3. Now run imports
-from bot_config import Config  # Successfully pulls from \config\bot_config.py
-from game_handler import GameHandler
+from bot_config import Config
 
-# Configure logging to output to stdout for Render logs to capture it smoothly
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("bot.log"),
-    ],
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 log = logging.getLogger(__name__)
 
@@ -34,12 +26,8 @@ BASE_URL = "https://lichess.org"
 
 
 def patch_config_via_xml():
-    """
-    Parses config.xml and patches the Config class attributes 
-    dynamically in-memory without changing config.py source code.
-    """
+    """Parses config.xml and patches Config attributes dynamically in-memory."""
     xml_path = os.path.join(project_root, "tests", "config.xml")
-    
     if not os.path.exists(xml_path):
         log.warning(f"config.xml not found at {xml_path}. Relying on hardcoded defaults.")
         return
@@ -47,8 +35,6 @@ def patch_config_via_xml():
     try:
         tree = ET.parse(xml_path)
         root = tree.getroot()
-
-        # 1. Parse Game Settings Nodes
         game_settings = root.find("game_settings")
         if game_settings is not None:
             def_elo_node = game_settings.find("default_elo")
@@ -67,7 +53,6 @@ def patch_config_via_xml():
             if tc_node is not None:
                 Config.ACCEPT_TIME_CONTROLS = [t.text for t in tc_node.findall("time_control") if t.text]
 
-        # 2. Parse Chat Text Elements
         bot_chat = root.find("bot_chat")
         if bot_chat is not None:
             greet_node = bot_chat.find("greet")
@@ -80,7 +65,7 @@ def patch_config_via_xml():
 
             gg_node = bot_chat.find("gg")
             if gg_node is not None and gg_node.text:
-                Config.CHAT_GG = greet_node.text if gg_node.text is None else gg_node.text
+                Config.CHAT_GG = gg_node.text
 
             blunder_node = bot_chat.find("blunder_detected")
             if blunder_node is not None and blunder_node.text:
@@ -96,24 +81,23 @@ patch_config_via_xml()
 
 
 class LichessBot:
-def __init__(self, engine):
+    def __init__(self, engine=None):
+        # 🟢 Indentation cleanly matched with exactly 4 spaces under the class scope
         self.token = Config.LICHESS_TOKEN
         self.headers = {"Authorization": f"Bearer {self.token}"}
         self.active_games: dict[str, asyncio.Task] = {}
-        self.engine = engine  # 🟢 Save global reference
+        self.engine = engine  # Receives the shared global engine reference cleanly
 
     async def start(self):
         async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=30) as client:
             response = await client.get("/api/account")
-            
-            # Catch bad authentication states early to prevent runtime KeyError crashes
             if response.status_code == 401:
-                log.critical("CRITICAL: Lichess API Token rejected! (401 Unauthorized). Verify your token string in the environment variables.")
+                log.critical("CRITICAL: Lichess API Token rejected! Verify token configuration parameters.")
                 return
 
             profile = response.json()
             if "username" not in profile:
-                log.critical(f"CRITICAL: Failed to parse user profile. Network payload: {profile}")
+                log.critical(f"CRITICAL: Failed to parse user profile: {profile}")
                 return
 
             log.info(f"Logged in as: {profile['username']}")
@@ -129,9 +113,7 @@ def __init__(self, engine):
         backoff = 1
         while True:
             try:
-                async with httpx.AsyncClient(
-                    base_url=BASE_URL, headers=self.headers, timeout=None
-                ) as client:
+                async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=None) as client:
                     async with client.stream("GET", "/api/stream/event") as resp:
                         resp.raise_for_status()
                         backoff = 1
@@ -147,18 +129,15 @@ def __init__(self, engine):
                 backoff = min(backoff * 2, 60)
 
     async def _handle_event(self, event: dict):
-        # Inside your existing _handle_event method, update the _run_game call:
-        # ... your existing if/elif statements ...
         etype = event.get("type")
 
         if etype == "challenge":
             await self._handle_challenge(event["challenge"])
 
-        elif event.get("type") == "gameStart":
+        elif etype == "gameStart":
             gid = event["game"]["id"]
             if gid not in self.active_games:
                 log.info(f"Game starting: {gid}")
-                # 🟢 Pass the global engine reference down to the handler
                 task = asyncio.create_task(self._run_game(gid))
                 self.active_games[gid] = task
 
@@ -195,17 +174,9 @@ def __init__(self, engine):
 
     async def _run_game(self, game_id: str):
         try:
-            # 🟢 Inject engine reference into GameHandler initialization
             from game_handler import GameHandler
             await GameHandler(game_id, self.token, self.engine).run()
         except asyncio.CancelledError:
             pass
         except Exception as e:
             log.error(f"Game {game_id} error: {e}", exc_info=True)
-
-if __name__ == "__main__":
-    bot = LichessBot()
-    try:
-        asyncio.run(bot.start())
-    except KeyboardInterrupt:
-        log.info("Bot stopped. GG.")
