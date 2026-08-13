@@ -57,9 +57,17 @@ class GameHandler:
             self.our_color = chess.WHITE if white_id == me else chess.BLACK
             self.estimator = SkillEstimator(self.engine, self.our_color)
             log.info(f"Playing as {'White' if self.our_color == chess.WHITE else 'Black'}")
+            
+            # 🟢 FIX 1: Capture the custom starting position FEN layout from the match data
+            # If the match uses a standard layout, it defaults safely to starting chess rules
+            initial_fen = event.get("initialFen", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            self.initial_fen = initial_fen
+            self.board = chess.Board(initial_fen)
+            
             if hasattr(Config, 'CHAT_GREET'):
                 await self._chat(Config.CHAT_GREET)
             await self._apply_state(event.get("state", {}))
+            
         elif etype == "gameState":
             await self._apply_state(event)
             if event.get("bdraw") or event.get("wdraw"):
@@ -67,7 +75,7 @@ class GameHandler:
             if event.get("btakeback") or event.get("wtakeback"):
                 await self._handle_takeback_offer()
             await self._handle_resign()
-
+            
     async def _handle_draw_offer(self):
         if not self.engine:
             return
@@ -114,21 +122,22 @@ class GameHandler:
         moves_str = state.get("moves", "").strip()
         incoming_moves = moves_str.split() if moves_str else []
         
-        # Re-play moves up to the second-to-last move to capture position BEFORE opponent moved
+        # Re-play moves up to the second-to-last move for CPL estimation tracking
         if self.estimator and not self.in_book and self.engine and len(incoming_moves) > len(self.board.move_stack):
-            temp_board = chess.Board()
+            # 🟢 FIX 2: Reset the calculation board to the initial custom FEN, not standard default layout
+            temp_board = chess.Board(getattr(self, "initial_fen", chess.STARTING_FEN))
             for uci in incoming_moves[:-1]:
                 temp_board.push_uci(uci)
             
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, lambda: self.estimator.record_position_before_opponent_move(temp_board))
 
-        # Fully catch up the real board layout to the current state
-        self.board = chess.Board()
+        # 🟢 FIX 3: Reset the primary game board context to your custom layout before replaying moves
+        self.board = chess.Board(getattr(self, "initial_fen", chess.STARTING_FEN))
         for uci in incoming_moves:
             self.board.push_uci(uci)
 
-        # Evaluate how much Centipawn Loss the opponent's newest move caused
+        # Evaluate opponent's move
         if self.estimator and not self.in_book and self.engine:
             if len(incoming_moves) > 0 and self.board.turn == self.our_color:
                 loop = asyncio.get_event_loop()
