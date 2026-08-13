@@ -96,10 +96,11 @@ patch_config_via_xml()
 
 
 class LichessBot:
-    def __init__(self):
+def __init__(self, engine):
         self.token = Config.LICHESS_TOKEN
         self.headers = {"Authorization": f"Bearer {self.token}"}
         self.active_games: dict[str, asyncio.Task] = {}
+        self.engine = engine  # 🟢 Save global reference
 
     async def start(self):
         async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=30) as client:
@@ -146,15 +147,18 @@ class LichessBot:
                 backoff = min(backoff * 2, 60)
 
     async def _handle_event(self, event: dict):
+        # Inside your existing _handle_event method, update the _run_game call:
+        # ... your existing if/elif statements ...
         etype = event.get("type")
 
         if etype == "challenge":
             await self._handle_challenge(event["challenge"])
 
-        elif etype == "gameStart":
+        elif event.get("type") == "gameStart":
             gid = event["game"]["id"]
             if gid not in self.active_games:
                 log.info(f"Game starting: {gid}")
+                # 🟢 Pass the global engine reference down to the handler
                 task = asyncio.create_task(self._run_game(gid))
                 self.active_games[gid] = task
 
@@ -191,12 +195,13 @@ class LichessBot:
 
     async def _run_game(self, game_id: str):
         try:
-            await GameHandler(game_id, self.token).run()
+            # 🟢 Inject engine reference into GameHandler initialization
+            from game_handler import GameHandler
+            await GameHandler(game_id, self.token, self.engine).run()
         except asyncio.CancelledError:
             pass
         except Exception as e:
             log.error(f"Game {game_id} error: {e}", exc_info=True)
-
 
 if __name__ == "__main__":
     bot = LichessBot()
