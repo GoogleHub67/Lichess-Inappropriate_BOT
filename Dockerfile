@@ -15,5 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all project files from GitHub
 COPY . .
 
-# 🟢 THE NATIVE IMMUTABLE DOCKER COMMAND:
-CMD ["gunicorn", "--workers", "1", "--threads", "4", "--bind", "0.0.0.0:10000", "app:app"]
+# 🟢 THE REAL FIXED COMMAND FOR THIS APP.PY ARCHITECTURE:
+# We switch Gunicorn's worker class to "gthread" so it natively supports 
+# your background thread engine loop instead of throwing an exit code 3!
+CMD ["gunicorn", "--workers", "1", "--worker-class", "gthread", "--threads", "4", "--bind", "0.0.0.0:10000", "app:app"]
