@@ -12,9 +12,9 @@ mkdir -p bin
 
 # 3. Download your opening book from GitHub Releases
 echo "Downloading opening book..."
-if curl -L -o config/assets/books/gm2001.bin "https://github.com/GoogleHub67/Lichess-Inappropriate_BOT/releases/download/V1.0.0/gm2001.bin"; then
+if curl -L -o assets/books/gm2001.bin "https://github.com/GoogleHub67/Lichess-Inappropriate_BOT/releases/download/V1.0.0/gm2001.bin"; then
     echo "✓ Opening book downloaded successfully"
-    ls -lh config/assets/books/gm2001.bin
+    ls -lh assets/books/gm2001.bin
 else
     echo "✗ Failed to download opening book"
     exit 1
