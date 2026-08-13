@@ -168,6 +168,6 @@ This codebase is entirely open-source software distributed under the terms of th
 * Object representations managed inside Python using the open-source [python-chess](https://python-chess.readthedocs.io/) runtime package library.
 
 ## 17. Future Roadmap
-* [ ] Integrate native web dashboard interfaces to keep track of active match histories.
-* [ ] Support customized cloud hosting integration setups for true 24/7 uptime.
-* [ ] Automate opening database selections according to opponent account configurations.
+* [🟥] Integrate native web dashboard interfaces to keep track of active match histories.
+* [🟨] Support customized cloud hosting integration setups for true 24/7 uptime.
+* [🟥] Automate opening database selections according to opponent account configurations.
