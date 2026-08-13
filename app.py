@@ -3,50 +3,51 @@ import sys
 import asyncio
 import threading
 import logging
+import chess.engine
 from flask import Flask
 
-# Route packages to match project directory layouts cleanly
 src_dir = os.path.dirname(os.path.abspath(__file__))
-config_folder_path = os.path.join(src_dir, "config")
-src_folder_path = os.path.join(src_dir, "src")
-
-if config_folder_path not in sys.path:
-    sys.path.insert(0, config_folder_path)
-if src_folder_path not in sys.path:
-    sys.path.insert(0, src_folder_path)
+if os.path.join(src_dir, "config") not in sys.path: sys.path.insert(0, os.path.join(src_dir, "config"))
+if os.path.join(src_dir, "src") not in sys.path: sys.path.insert(0, os.path.join(src_dir, "src"))
 
 from bot import LichessBot
+from bot_config import Config
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-# 🟢 CRITICAL: This variable name MUST match the second half of the gunicorn command (app:app)
 app = Flask(__name__)
+global_engine = None  # 🟢 Global reference container
 
 @app.route('/')
 def home():
-    return "♟️ Chess Bot Server is Alive and Healthy!"
+    return "♟️ Shared Engine Server is Alive!"
 
 def run_bot_background():
-    log.info("🚀 Launching Lichess Bot stream listener in background thread...")
+    global global_engine
+    log.info("🚀 Launching global engine instance...")
+    
+    # Create a dedicated event loop for background systems
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    bot = LichessBot()
+    
     try:
+        # Spawn ONE single Stockfish instance for the entire app life
+        global_engine = chess.engine.SimpleEngine.popen_uci(Config.STOCKFISH_PATH)
+        log.info("✅ GLOBAL STOCKFISH LOADED SUCCESSFULLY")
+        
+        # Pass the global engine reference into your bot
+        bot = LichessBot(engine=global_engine)
         loop.run_until_complete(bot.start())
     except Exception as e:
-        log.error(f"❌ Background bot execution crashed: {e}")
+        log.error(f"❌ Background crash: {e}")
+    finally:
+        if global_engine:
+            try: global_engine.quit()
+            except: pass
 
-# The 429 Gatekeeper check
 if not os.environ.get("WERKZEUG_RUN_MAIN") and threading.active_count() <= 2:
-    def delayed_start():
-        import time
-        time.sleep(2)
-        bot_thread = threading.Thread(target=run_bot_background, daemon=True)
-        bot_thread.start()
-
-    threading.Thread(target=delayed_start, daemon=True).start()
+    threading.Thread(target=run_bot_background, daemon=True).start()
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
