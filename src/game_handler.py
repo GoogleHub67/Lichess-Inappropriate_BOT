@@ -23,35 +23,30 @@ log = logging.getLogger(__name__)
 BASE_URL = "https://lichess.org"
 
 class GameHandler:
-    def __init__(self, game_id: str, token: str):
+    # 🟢 Update initialization to accept the shared engine object directly
+    def __init__(self, game_id: str, token: str, engine):
         self.game_id = game_id
         self.token = token
         self.headers = {"Authorization": f"Bearer {token}"}
         self.board = chess.Board()
         self.our_color: chess.Color | None = None
-        self.engine: chess.engine.SimpleEngine | None = None
-        self.estimator: SkillEstimator | None = None
-        self.in_book: bool = True
-        self.off_book_notified: bool = False
+        self.engine = engine  # 🟢 Pre-loaded, living engine instance
+        self.estimator = None
+        self.in_book = True
+        self.off_book_notified = False
 
     async def run(self):
         async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=60) as client:
             self.client = client
-            await self._start_engine()
+            # 🟢 DELETE: await self._start_engine() is removed entirely!
             try:
                 async with client.stream("GET", f"/api/bot/game/stream/{self.game_id}") as resp:
                     async for line in resp.aiter_lines():
                         if line.strip():
-                            event = json.loads(line)
-                            await self._handle_game_event(event)
+                            await self._handle_game_event(json.loads(line))
             except asyncio.CancelledError:
-                # Handle graceful exit when bot.py cancels the game task on gameFinish
-                if hasattr(Config, 'CHAT_GG'):
-                    await self._chat(Config.CHAT_GG)
+                if hasattr(Config, 'CHAT_GG'): await self._chat(Config.CHAT_GG)
                 raise
-            finally:
-                await self._stop_engine()
-
     async def _handle_game_event(self, event: dict):
         etype = event.get("type")
         if etype == "gameFull":
