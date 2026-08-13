@@ -47,6 +47,7 @@ class GameHandler:
             except asyncio.CancelledError:
                 if hasattr(Config, 'CHAT_GG'): await self._chat(Config.CHAT_GG)
                 raise
+                
     async def _handle_game_event(self, event: dict):
         etype = event.get("type")
         if etype == "gameFull":
