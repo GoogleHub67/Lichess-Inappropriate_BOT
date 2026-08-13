@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 
     Lichess Inappropriate BOT - Configuration Template
-    Instructions: Duplicate this file, rename it to 'extra_config.xml', 
+    Instructions: Duplicate this file, rename it to 'config.xml', 
     and adjust the values below to match your bot's preferences.
 -->
 <configuration>
@@ -27,6 +27,7 @@
             <variant>atomic</variant>
             <variant>horde</variant>
             <variant>racingKings</variant>
+            <variant>fromPosition</variant>
         </accept_variants>
         
         <!-- 
