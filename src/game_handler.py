@@ -8,6 +8,7 @@ import chess
 import chess.engine
 import chess.polyglot
 import httpx
+from 429_stopper import RateLimitStopper
 
 # Direct Python to look inside the root directory package structures safely
 src_dir = os.path.dirname(os.path.abspath(__file__))
