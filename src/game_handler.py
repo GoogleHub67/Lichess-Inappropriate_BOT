@@ -18,7 +18,7 @@ if config_folder_path not in sys.path:
 
 from bot_config import Config
 from skill_estimator import SkillEstimator
-from stopper429 import RateLimitStopper  # 🟢 Import the rate throttling manager
+from RateLimit429Stopper import RateLimitStopper  # 🟢 Import the rate throttling manager
 
 log = logging.getLogger(__name__)
 BASE_URL = "https://lichess.org"
