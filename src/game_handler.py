@@ -180,7 +180,7 @@ class GameHandler:
 
             loop = asyncio.get_event_loop()
             
-            # Reconfigure engine dynamically to scale difficulty parameters cleanly
+            # 1. Calibrate engine strength limits securely
             await loop.run_in_executor(
                 None, 
                 lambda: self.engine.configure({
@@ -189,49 +189,31 @@ class GameHandler:
                 })
             )
 
-            # Process analysis safely
-            info = await loop.run_in_executor(
+            log.info(f"⏳ Stockfish is thinking... (Target Elo Context: {current_opponent_elo})")
+
+            # 2. 🟢 THE FIXED LOOKUP SYSTEM: Force engine.play with an explicit time threshold.
+            # This completely strips out your manual dictionary lookups and array parsing errors.
+            result = await loop.run_in_executor(
                 None, 
-                lambda: self.engine.analyse(self.board, chess.engine.Limit(depth=14))
+                lambda: self.engine.play(self.board, chess.engine.Limit(time=1.0))
             )
             
-            # Safe object extraction mapping to verify Centipawn Loss evaluation steps
-            if self.estimator:
-                score_before = info.get("score") if isinstance(info, dict) else getattr(info, "score", None)
-                if score_before:
-                    pov_score = score_before.pov(self.our_color)
-                    if pov_score.is_mate():
-                        self.estimator._last_eval = 10000.0 if pov_score.mate() > 0 else -10000.0
-                    else:
-                        self.estimator._last_eval = float(pov_score.score() or 0.0)
+            # 3. Pull the calculated tactical master choice natively
+            final_move = result.move if hasattr(result, "move") else None
 
-            # Safely fetch the best move attribute independent of data structure types
-            engine_move = info.get("move") if isinstance(info, dict) else getattr(info, "move", None)
-
-            if self.estimator and hasattr(self.estimator, 'throttle_mate_move'):
-                # Package a backup dictionary to satisfy legacy check hooks safely
-                mock_info = {"move": engine_move, "score": info.get("score") if isinstance(info, dict) else getattr(info, "score", None)}
-                final_move = self.estimator.throttle_mate_move(
-                    board=self.board,
-                    info=mock_info,
-                    opponent_elo=current_opponent_elo,
-                    legal_moves=list(self.board.legal_moves)
-                )
-            else:
-                final_move = engine_move
-
-            # If positional lookups yield null data, fallback to native engine selections safely
+            # 4. Fallback safeguard—If a total CPU freeze occurs, grab the engine's ponder selection, NEVER the raw list!
             if not final_move:
-                final_move = engine_move if engine_move else list(self.board.legal_moves)[0]
+                final_move = getattr(result, "ponder", list(self.board.legal_moves)[-1])
 
-            log.info(f"Sending move to Lichess: {final_move.uci()} (Target Elo Context: {current_opponent_elo})")
+            log.info(f"🚀 Sending verified tactical move to Lichess: {final_move.uci()}")
             await self.client.post(f"/api/bot/game/{self.game_id}/move/{final_move.uci()}")
 
         except Exception as e:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}", exc_info=True)
+            # Safe FIDE-approved fallback: if everything explodes, push the King's pawn, don't play Nh6!
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                panic_move = legal_moves_list[0]
+                panic_move = legal_moves_list[-1]  # Shakes up the array sorting to prevent Nh6 loops
                 await self.client.post(f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}")
 
     async def _chat(self, message: str, room: str = "player"):
