@@ -59,13 +59,19 @@ class GameHandler:
             self.estimator = SkillEstimator(self.engine, self.our_color)
             log.info(f"Playing as {'White' if self.our_color == chess.WHITE else 'Black'}")
             
-            # 🟢 FIX: Dynamically capture the custom FEN setup (like Halasz Gambit)
-            self.initial_fen = event.get("initialFen", chess.STARTING_FEN)
+            # 🟢 FIX: Handle Lichess 'startpos' or missing strings safely into standard FEN
+            raw_fen = event.get("initialFen", "")
+            if not raw_fen or raw_fen.lower() == "startpos":
+                self.initial_fen = chess.STARTING_FEN
+            else:
+                self.initial_fen = raw_fen
+                
             self.board = chess.Board(self.initial_fen)
             
             if hasattr(Config, 'CHAT_GREET'):
                 await self._chat(Config.CHAT_GREET)
             await self._apply_state(event.get("state", {}))
+            
         elif etype == "gameState":
             await self._apply_state(event)
             if event.get("bdraw") or event.get("wdraw"):
