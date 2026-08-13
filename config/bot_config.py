@@ -30,7 +30,7 @@ class Config:
         (999, 1320),
     ]
 
-    ACCEPT_VARIANTS: list[str] = ["standard", "chess960"]
+    ACCEPT_VARIANTS: list[str] = ["standard", "chess960", "fromPosition"]
     ACCEPT_TIME_CONTROLS: list[str] = ["bullet", "blitz", "rapid", "classical", "correspondence"]
     DECLINE_RATED: bool = False
 
