@@ -16,14 +16,15 @@
 7. [Environment Configuration](#7-environment-configuration)
 8. [Comprehensive Directory Mapping](#8-comprehensive-directory-mapping)
 9. [Detailed Module Breakdown](#9-detailed-module-breakdown)
-10. [Advanced Usage Framework](#10-advanced-usage-framework)
-11. [API & Programmatic Reference](#11-api--programmatic-reference)
-12. [Troubleshooting & Diagnostics](#12-troubleshooting--diagnostics)
-13. [Performance Fine-Tuning](#13-performance-fine-tuning)
-14. [Contributing Lifecycle](#14-contributing-lifecycle)
-15. [License Agreements](#15-license-agreements)
-16. [Credits and Badges](#16-credits-and-badges)
-17. [Future Roadmap](#17-future-roadmap)
+10. [Deployed Bot](#10-deployed-bot)
+11. [Advanced Usage Framework](#11-advanced-usage-framework)
+12. [API & Programmatic Reference](#12-api--programmatic-reference)
+13. [Troubleshooting & Diagnostics](#13-troubleshooting--diagnostics)
+14. [Performance Fine-Tuning](#14-performance-fine-tuning)
+15. [Contributing Lifecycle](#15-contributing-lifecycle)
+16. [License Agreements](#16-license-agreements)
+17. [Credits and Badges](#17-credits-and-badges)
+18. [Future Roadmap](#18-future-roadmap)
 
 ---
 
@@ -128,7 +129,17 @@ Lichess-Inappropriate_BOT/
 * **`src/game_handler.py`**: Implements state rules, reads board steps, and processes challenge transactions.
 * **`src/skill_estimator.py`**: Tracks analytical evaluation metrics to map centipawn metrics directly onto target ratings.
 
-## 10. Advanced Usage Framework
+## 10. Deployed Bot
+The backend server is live on Render: [Live Server Status](https://lichess-inappropriate-bot.onrender.com/)
+
+**How to Play / Interact**
+Since this is a backend Lichess bot, you don't interact with the Render link directly. Instead:
+1. Go to **Lichess.org**.
+2. Search for the bot's username: `[Insert Your Bot's Lichess Username Here]`.
+3. Challenge the bot to a game or send it a message to see it in action!
+
+
+## 11. Advanced Usage Framework
 Launch the tool package command interface execution entry point natively via the active console window:
 ```bash
 inappropriate_bot
@@ -140,34 +151,34 @@ python -m src.bot
 * **Silent Mode Execution (Windows):** Suppress the command console pop-up layer by utilizing `pythonw bot.py`.
 * **Detached Runtime (Linux/Mac):** Maintain long-term execution after dropping SSH sessions via `nohup python bot.py &`.
 
-## 11. API & Programmatic Reference
+## 12. API & Programmatic Reference
 The internal handlers parse data properties streaming from Lichess's public development entry channels:
 * `GET /api/stream/event`: Establishes the real-time event pipeline to interceptIncoming game challenges.
 * `POST /api/bot/game/{gameId}/move/{move}`: Ships calculated chess engine calculations back to the board matrix.
 * `POST /api/bot/game/{gameId}/chat`: Emits automated status alerts directly to the in-game log panel.
 
-## 12. Troubleshooting & Diagnostics
+## 13. Troubleshooting & Diagnostics
 * **Flashing Window/Instant Exit:** Avoid clicking raw module paths directly from the explorer window. Launch the module commands manually from an already open terminal window to capture active error flags.
 * **401 Authentication Validation Errors:** Confirm your token features the authorized `bot:play` permission configuration.
 * **Engine Connection Timeout:** Ensure path variables in `config.py` point directly to legitimate engine instances.
 
-## 13. Performance Fine-Tuning
+## 14. Performance Fine-Tuning
 Optimize your engine properties for low-latency calculations:
 * **Core Distribution:** Align the calculation process properties explicitly with actual machine CPU core limitations.
 * **Hash Optimization:** Raise local allocation ceilings (e.g., to 2048MB) within your script configuration values to accelerate high-depth searches.
 
-## 14. Contributing Lifecycle
+## 15. Contributing Lifecycle
 We welcome pull requests and enhancements. Review the comprehensive style standards, pipeline conditions, and branch submission structures maintained in our [`CONTRIBUTING.md`](./CONTRIBUTING.md) configuration layout.
 
-## 15. License Agreements
+## 16. License Agreements
 This codebase is entirely open-source software distributed under the terms of the **MIT License**. For complete copyright parameters, review the root [`LICENSE`](./LICENSE) text asset. This framework acts as a bridge reference derived from the original engine systems managed under the AGPL open-source guidelines.
 
-## 16. Credits and Badges
+## 17. Credits and Badges
 * Developed utilizing foundational structural wrappers provided by the [lichess-bot-devs](https://github.com/lichess-bot-devs/lichess-bot) community team.
 * Core engine operations run via official [Stockfish](https://stockfishchess.org/) and [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish) projects.
 * Object representations managed inside Python using the open-source [python-chess](https://python-chess.readthedocs.io/) runtime package library.
 
-## 17. Future Roadmap
+## 18. Future Roadmap
 * [🟥] Integrate native web dashboard interfaces to keep track of active match histories.
 * [🟨] Support customized cloud hosting integration setups for true 24/7 uptime.
 * [🟥] Automate opening database selections according to opponent account configurations.
