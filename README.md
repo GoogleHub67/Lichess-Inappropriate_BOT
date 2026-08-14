@@ -100,28 +100,46 @@ LICHESS_TOKEN=lip_yourtoken
 ## 8. Comprehensive Directory Mapping
 ```text
 Lichess-Inappropriate_BOT/
+├── .env.example
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   └── bug_report.md
+│   ├── pull_request_template.md
 │   └── workflows/
 │       ├── bot-ci.yml
-│       └── lint-and-test.yml
-├── assets/
-│   └── books/
-│       └── gm2001.bin
+│       ├── lint-and-test.yml
+│       └── publish.yml
+├── .gitignore
+├── .vscode/
+│   └── settings.json
+├── CITATION.cff
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── Dockerfile
+├── LICENSE
+├── README.md
+├── SECURITY.md
+├── app.py
+├── build.sh
+├── config/
+│   ├── bot_config.py
+│   └── config.yml.default
+├── error.py
+├── launch_unix.sh
+├── launch_windows.bat
+├── pyproject.toml
+├── requirements.txt
+├── setup_linux.sh
+├── setup_mac.sh
+├── setup_windows.ps1
 ├── src/
+│   ├── RateLimit429Stopper.py
 │   ├── __init__.py
 │   ├── bot.py
 │   ├── game_handler.py
 │   └── skill_estimator.py
-├── dist/
-│   ├── inappropriate_bot-1.0.0-py3-none-any.whl
-│   └── inappropriate_bot-1.0.0.tar.gz
-├── pyproject.toml
-├── config.py
-├── config.yml.default
-├── requirements.txt
-└── LICENSE
+└── tests/
+    └── config.xml.default
 ```
 
 ## 9. Detailed Module Breakdown
@@ -135,7 +153,7 @@ The backend server is live on Render: [Live Server Status](https://lichess-inapp
 **How to Play / Interact**
 Since this is a backend Lichess bot, you don't interact with the Render link directly. Instead:
 1. Go to **Lichess.org**.
-2. Search for the bot's username: `[Insert Your Bot's Lichess Username Here]`.
+2. Search for the bot's username: `Inappropriate-BOT`.
 3. Challenge the bot to a game or send it a message to see it in action!
 
 
