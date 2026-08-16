@@ -122,6 +122,7 @@ Lichess-Inappropriate_BOT/
 └── tests/
     └── config.xml.default
 ├── .env.example
+├── .gitattributes
 ├── .gitignore
 ├── CITATION.cff
 ├── CODE_OF_CONDUCT.md
