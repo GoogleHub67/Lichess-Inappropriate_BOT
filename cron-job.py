@@ -13,7 +13,7 @@ logging.basicConfig(
 
 # Fetch configuration from Environment Variables
 HEARTBEAT_URL = os.getenv("HEARTBEAT_URL")
-INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", "300"))  # Default: 5 minutes
+INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", "10"))  # Default: 5 minutes
 
 def send_heartbeat():
     """Sends a ping to the tracking endpoint and logs the result."""
