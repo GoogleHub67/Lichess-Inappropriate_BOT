@@ -100,7 +100,6 @@ LICHESS_TOKEN=lip_yourtoken
 ## 8. Comprehensive Directory Mapping
 ```text
 Lichess-Inappropriate_BOT/
-├── .env.example
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   └── bug_report.md
@@ -109,9 +108,21 @@ Lichess-Inappropriate_BOT/
 │       ├── bot-ci.yml
 │       ├── lint-and-test.yml
 │       └── publish.yml
-├── .gitignore
 ├── .vscode/
 │   └── settings.json
+├── config/
+│   ├── bot_config.py
+│   └── config.yml.default
+├── src/
+│   ├── RateLimit429Stopper.py
+│   ├── __init__.py
+│   ├── bot.py
+│   ├── game_handler.py
+│   └── skill_estimator.py
+└── tests/
+    └── config.xml.default
+├── .env.example
+├── .gitignore
 ├── CITATION.cff
 ├── CODE_OF_CONDUCT.md
 ├── CONTRIBUTING.md
@@ -121,9 +132,7 @@ Lichess-Inappropriate_BOT/
 ├── SECURITY.md
 ├── app.py
 ├── build.sh
-├── config/
-│   ├── bot_config.py
-│   └── config.yml.default
+├── cron-job.py
 ├── error.py
 ├── launch_unix.sh
 ├── launch_windows.bat
@@ -132,14 +141,6 @@ Lichess-Inappropriate_BOT/
 ├── setup_linux.sh
 ├── setup_mac.sh
 ├── setup_windows.ps1
-├── src/
-│   ├── RateLimit429Stopper.py
-│   ├── __init__.py
-│   ├── bot.py
-│   ├── game_handler.py
-│   └── skill_estimator.py
-└── tests/
-    └── config.xml.default
 ```
 
 ## 9. Detailed Module Breakdown
