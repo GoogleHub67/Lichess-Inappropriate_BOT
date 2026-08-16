@@ -1,0 +1,11 @@
+# Handle line endings automatically for all text files
+* text=auto
+
+# Force Unix line endings for shell scripts and config files
+*.sh text eol=lf
+*.yml text eol=lf
+*.default text eol=lf
+requirements.txt text eol=lf
+
+# Force Windows line endings for PowerShell scripts
+*.ps1 text eol=crlf
