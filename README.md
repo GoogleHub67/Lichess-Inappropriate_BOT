@@ -103,11 +103,11 @@ Lichess-Inappropriate_BOT/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   └── bug_report.md
-│   ├── pull_request_template.md
 │   └── workflows/
 │       ├── bot-ci.yml
 │       ├── lint-and-test.yml
 │       └── publish.yml
+│   ├── pull_request_template.md
 ├── .vscode/
 │   └── settings.json
 ├── config/
@@ -173,7 +173,7 @@ python -m src.bot
 
 ## 12. API & Programmatic Reference
 The internal handlers parse data properties streaming from Lichess's public development entry channels:
-* `GET /api/stream/event`: Establishes the real-time event pipeline to interceptIncoming game challenges.
+* `GET /api/stream/event`: Establishes the real-time event pipeline to intercept Incoming game challenges.
 * `POST /api/bot/game/{gameId}/move/{move}`: Ships calculated chess engine calculations back to the board matrix.
 * `POST /api/bot/game/{gameId}/chat`: Emits automated status alerts directly to the in-game log panel.
 
@@ -200,5 +200,5 @@ This codebase is entirely open-source software distributed under the terms of th
 
 ## 18. Future Roadmap
 * [🟥] Integrate native web dashboard interfaces to keep track of active match histories.
-* [🟨] Support customized cloud hosting integration setups for true 24/7 uptime.
+* [🟩] Support customized cloud hosting integration setups for true 24/7 uptime.
 * [🟥] Automate opening database selections according to opponent account configurations.
