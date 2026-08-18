@@ -61,3 +61,19 @@ else:
         df[['game_id', 'opponent', 'result', 'final_cpl', 'date_played']], 
         use_container_width=True
     )
+    # 🕵️‍♂️ Opponent intelligence tracking panel
+    st.markdown("---")
+    st.subheader("🕵️‍♂️ Target Player Intelligence Dossiers (SQL `opponents` Table)")
+    
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        opp_df = pd.read_sql_query("SELECT * FROM opponents ORDER BY last_scouted DESC;", conn)
+        conn.close()
+        
+        if opp_df.empty:
+            st.info("No target dossiers compiled yet. Play games to automatically profile enemies!")
+        else:
+            st.dataframe(opp_df, use_container_width=True)
+    except Exception as e:
+        st.error(f"Could not load scout data: {e}")
+
