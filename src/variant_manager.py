@@ -1,39 +1,56 @@
+import logging
 import chess
-import chess.variant # Required for variant board rule logic structures
+import chess.variant
 
-# Map incoming Lichess variant keys to Fairy-Stockfish UCI string specs
-LICHESS_VARIANT_MAPPINGS = {
-    "standard": "chess",
-    "chess960": "chess960",
+log = logging.getLogger(__name__)
+
+# List of variants the bot is strictly NOT willing to play
+UNWANTED_VARIANTS = {
+    "standard",       # Already covered elsewhere
+    "chess960",       # Already covered elsewhere
+    "fromPosition"    # Already covered elsewhere
+}
+
+# Mapping of valid non-standard Lichess variant keys to Fairy-Stockfish UCI string tags
+# Includes: King of the Hill, Three-Check, Crazyhouse, Antichess, Atomic, Horde, Racing Kings
+VARIANT_UCI_MAPPINGS = {
+    "kingOfTheHill": "kingofthehill",
+    "threeCheck": "3check",
     "crazyhouse": "crazyhouse",
     "antichess": "antichess",
     "atomic": "atomic",
     "horde": "horde",
-    "kingOfTheHill": "kingofthehill",
-    "racingKings": "racingkings",
-    "threeCheck": "3check"
+    "racingKings": "racingkings"
 }
 
-def setup_variant_engine(engine_instance, lichess_variant_key):
+def is_playable_variant(variant_key: str) -> bool:
+    """Checks if the incoming challenge format belongs to our new variant list."""
+    return variant_key in VARIANT_UCI_MAPPINGS
+
+def should_decline_variant(variant_key: str) -> bool:
+    """Returns True if the format is standard or explicitly blocked."""
+    return variant_key in UNWANTED_VARIANTS
+
+def setup_variant_board(engine, variant_key: str):
     """
-    Injects the target variant configuration parameters straight into Fairy-Stockfish
-    and returns the correct python-chess variant board object framework.
+    Configures Fairy-Stockfish with the proper variant setting 
+    and returns the matching python-chess rule-enforcing board framework.
     """
-    # Fallback to standard chess if variant is unknown
-    uci_variant = LICHESS_VARIANT_MAPPINGS.get(lichess_variant_key, "chess")
-    
+    uci_variant_name = VARIANT_UCI_MAPPINGS.get(variant_key)
+    if not uci_variant_name:
+        log.warning(f"Unknown variant key '{variant_key}'. Defaulting to standard rules.")
+        return chess.Board()
+
     try:
-        print(f"⚙️ Sending UCI_Variant setup token to Fairy-Stockfish: {uci_variant}")
+        log.info(f"♞ Configuring Fairy-Stockfish engine for variant: {uci_variant_name}")
         
-        # Configure the running engine instance binary
-        engine_instance.configure({"UCI_Variant": uci_variant})
+        # Inject the variant setup configuration option token directly into the engine instance binary
+        engine.configure({"UCI_Variant": uci_variant_name})
         
-        # Dynamically load the correct internal rule-checker board state class
-        if uci_variant == "chess":
-            return chess.Board()
-        else:
-            return chess.variant.find_variant(uci_variant)()
-            
+        # Dynamically lookup and initialize the correct rule structure board (e.g. chess.variant.AtomicBoard())
+        variant_board_class = chess.variant.find_variant(uci_variant_name)
+        return variant_board_class()
+        
     except Exception as e:
-        print(f"❌ Variant Engine Setup Failed: {e}. Falling back to standard rules.")
+        log.error(f"Fairy-Stockfish variant initialization crash sequence: {e}")
         return chess.Board()
