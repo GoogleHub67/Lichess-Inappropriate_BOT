@@ -20,14 +20,15 @@ from bot_config import Config
 from skill_estimator import SkillEstimator
 from RateLimit429Stopper import RateLimitStopper  # 🟢 Import the rate throttling manager
 
-# 🟢 NEW PIPELINE IMPORTS: Connect your SQL modules
+# 🟢 PIPELINE IMPORTS: Connect your SQL modules and Variant layout engine
 from src.scout import scout_opponent_with_sql
 from src.history_manager import HistoryManager
+from src.variant_manager import is_playable_variant, should_decline_variant, setup_variant_board
 
 log = logging.getLogger(__name__)
 BASE_URL = "https://lichess.org"
 
-# 🟢 Initialize the persistent local SQL tracker instance
+# Initialize the persistent local SQL tracker instance
 history_tracker = HistoryManager()
 
 class GameHandler:
@@ -42,7 +43,8 @@ class GameHandler:
         self.in_book = True
         self.off_book_notified = False
         self.initial_fen = chess.STARTING_FEN  # Default layout tracker
-        self.opponent_username = "Unknown"  # 🟢 Track opponent handle string
+        self.opponent_username = "Unknown"  # Track opponent handle string
+        self.variant_key = "standard"  # 🟢 Track active match format internally
 
     async def run(self):
         async with httpx.AsyncClient(base_url=BASE_URL, headers=self.headers, timeout=60) as client:
@@ -52,7 +54,7 @@ class GameHandler:
                     async for line in resp.aiter_lines():
                         if line.strip():
                             await self._handle_game_event(json.loads(line))
-            except asyncio.get_event_loop().CancelledError:
+            except asyncio.CancelledError:
                 if hasattr(Config, 'CHAT_GG'):
                     await self._chat(Config.CHAT_GG)
                 raise
@@ -73,9 +75,21 @@ class GameHandler:
                 self.opponent_username = event["white"].get("id", "Unknown")
                 
             self.estimator = SkillEstimator(self.engine, self.our_color)
-            log.info(f"Playing as {'White' if self.our_color == chess.WHITE else 'Black'} against {self.opponent_username}")
             
-            # 🟢 NEW SCOUT INJECTION: Intelligence profiling executed via separate thread-pool worker
+            # 🟢 VARIANT FILTER ROUTING INTERCEPT
+            self.variant_key = event.get("variant", {}).get("key", "standard")
+            log.info(f"Playing as {'White' if self.our_color == chess.WHITE else 'Black'} against {self.opponent_username} [Format: {self.variant_key}]")
+            
+            if should_decline_variant(self.variant_key):
+                # Standard formats are managed by your external files, skip intercept
+                pass
+            elif not is_playable_variant(self.variant_key):
+                # Send polite cancellation chat notice if an unknown format bypasses the challenge logic
+                await self._chat("I'm sorry, I am not willing to play this variant format. Aborting match.")
+                await RateLimitStopper.safe_post(self.client, f"/api/bot/game/{self.game_id}/abort")
+                return
+
+            # NEW SCOUT INJECTION: Intelligence profiling executed via separate thread-pool worker
             try:
                 loop = asyncio.get_event_loop()
                 weakness = await loop.run_in_executor(None, lambda: scout_opponent_with_sql(self.opponent_username))
@@ -83,14 +97,21 @@ class GameHandler:
             except Exception as scout_err:
                 log.warning(f"Failed to execute scout intelligence framework: {scout_err}")
             
-            # FIX: Handle Lichess 'startpos' or missing strings safely into standard FEN
+            # 🟢 RECONFIGURED FOR VARIANT BOARDS: Load the specialized variant rules board if needed
             raw_fen = event.get("initialFen", "")
-            if not raw_fen or raw_fen.lower() == "startpos":
-                self.initial_fen = chess.STARTING_FEN
+            if is_playable_variant(self.variant_key):
+                # Run engine configuration step outside the primary async loop smoothly
+                self.board = await loop.run_in_executor(None, lambda: setup_variant_board(self.engine, self.variant_key))
+                if raw_fen and raw_fen.lower() != "startpos":
+                    self.board.set_fen(raw_fen)
+                self.in_book = False # Disable polyglot open books entirely for active variants
             else:
-                self.initial_fen = raw_fen
-                
-            self.board = chess.Board(self.initial_fen)
+                # Default behavior for Standard/960/FromPosition tracks
+                if not raw_fen or raw_fen.lower() == "startpos":
+                    self.initial_fen = chess.STARTING_FEN
+                else:
+                    self.initial_fen = raw_fen
+                self.board = chess.Board(self.initial_fen)
             
             if hasattr(Config, 'CHAT_GREET'):
                 await self._chat(Config.CHAT_GREET)
@@ -114,11 +135,11 @@ class GameHandler:
             if score.is_mate() and score.mate() < 0:
                 await RateLimitStopper.safe_post(self.client, f"/api/bot/game/{self.game_id}/draw/yes")
                 await self._chat("I'll take the draw.")
-                self._trigger_sql_log("draw") # 🟢 SQL Log trigger
+                self._trigger_sql_log("draw")
             elif not score.is_mate() and score.score() <= 50:
                 await RateLimitStopper.safe_post(self.client, f"/api/bot/game/{self.game_id}/draw/yes")
                 await self._chat("Fair enough, draw accepted.")
-                self._trigger_sql_log("draw") # 🟢 SQL Log trigger
+                self._trigger_sql_log("draw")
             else:
                 await RateLimitStopper.safe_post(self.client, f"/api/bot/game/{self.game_id}/draw/no")
                 await self._chat("No draws! Keep playing.")
@@ -142,21 +163,21 @@ class GameHandler:
             if score.is_mate() and score.mate() < 0 and abs(score.mate()) <= 3:
                 await RateLimitStopper.safe_post(self.client, f"/api/bot/game/{self.game_id}/resign")
                 await self._chat("GG, you got me.")
-                self._trigger_sql_log("loss") # 🟢 SQL Log trigger
+                self._trigger_sql_log("loss")
         except Exception as e:
             log.warning(f"Resign failed: {e}")
 
-    # 🟢 NEW DATA WRITING WRAPPER: Executes SQL transactions safely outside main async loop
     def _trigger_sql_log(self, result_outcome: str):
         try:
             calculated_cpl = 0
             if self.estimator and hasattr(self.estimator, 'get_avg_cpl'):
-                # Handle fallback if skill_estimator tracks raw integer values
                 calculated_cpl = int(self.estimator.get_avg_cpl())
                 
+            # Log variant data along with name tracking configurations smoothly
+            display_name = f"{self.opponent_username} ({self.variant_key})"
             history_tracker.log_game(
                 game_id=self.game_id,
-                opponent=self.opponent_username,
+                opponent=display_name,
                 result=result_outcome,
                 final_cpl=calculated_cpl
             )
@@ -164,10 +185,8 @@ class GameHandler:
             log.error(f"Failed to commit endgame state metadata payload to local SQL layout: {log_err}")
 
     async def _apply_state(self, state: dict):
-        # 🟢 NEW STATUS CATCH: Intercept final game outcomes to log active match histories
         status = state.get("status", "started")
         if status not in ("started", "created"):
-            # The game has ended via standard match resolutions (mate, resign, timeout)
             winner_color_str = state.get("winner")
             if not winner_color_str:
                 self._trigger_sql_log("draw")
@@ -180,17 +199,23 @@ class GameHandler:
         moves_str = state.get("moves", "").strip()
         incoming_moves = moves_str.split() if moves_str else []
         
-        # Re-play moves up to the second-to-last move based on our custom initial FEN state
+        # Re-play moves up to the second-to-last move based on our custom initial board layout
         if self.estimator and not self.in_book and self.engine and len(incoming_moves) > len(self.board.move_stack):
-            temp_board = chess.Board(self.initial_fen)
+            # 🟢 VARIANT COMPATIBLE BOARD TRACKING: Match the underlying layout type structure
+            temp_board = type(self.board)() if is_playable_variant(self.variant_key) else chess.Board(self.initial_fen)
             for uci in incoming_moves[:-1]:
                 temp_board.push_uci(uci)
             
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, lambda: self.estimator.record_position_before_opponent_move(temp_board))
 
-        # Reset and catch up the primary board from the custom layout
-        self.board = chess.Board(self.initial_fen)
+        # Reset and catch up the primary board structure cleanly
+        if is_playable_variant(self.variant_key):
+            # Reset to core variant rules empty instance tracking configurations
+            self.board = type(self.board)() 
+        else:
+            self.board = chess.Board(self.initial_fen)
+            
         for uci in incoming_moves:
             self.board.push_uci(uci)
 
@@ -210,10 +235,10 @@ class GameHandler:
                 with chess.polyglot.open_reader(Config.BOOK_PATH) as reader:
                     entries = list(reader.find_all(self.board))
                     if entries:
-                        weights = [e.weight for e in entries]  # 🟢 Fixed spelling from 'entires'
+                        weights = [e.weight for e in entries]
                         entry_list = random.choices(entries, weights=weights, k=1)
-                        entry = entry_list[0]  # 🟢 Safely extract the entry from the list
-                        book_move = entry.move  # 🟢 Property access (.move instead of .move())
+                        entry = entry_list
+                        book_move = entry.move
                         
                         log.info(f"Opening Book Move Played: {book_move}")
                         move_url = f"/api/bot/game/{self.game_id}/move/{book_move.uci()}"
@@ -232,10 +257,10 @@ class GameHandler:
             self.in_book = False
 
         if not self.engine:
-            log.warning("EMERGENCY FALLBACK: Stockfish engine is not loaded. Selecting first legal move.")
+            log.warning("EMERGENCY FALLBACK: Engine is not loaded. Selecting first legal move.")
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                move_url = f"/api/bot/game/{self.game_id}/move/{legal_moves_list[0].uci()}"
+                move_url = f"/api/bot/game/{self.game_id}/move/{legal_moves_list.uci()}"
                 await RateLimitStopper.safe_post(self.client, move_url)
             return
 
@@ -254,9 +279,9 @@ class GameHandler:
                 })
             )
 
-            log.info(f"⏳ Stockfish is thinking... (Target Elo Context: {current_opponent_elo})")
+            log.info(f"⏳ Fairy-Stockfish is thinking... (Target Elo Context: {current_opponent_elo})")
 
-            # Force engine.play with an explicit time threshold to guarantee FIDE quality and prevent Nh6 drops
+            # Force engine.play with an explicit time threshold to guarantee processing performance stability
             result = await loop.run_in_executor(
                 None, 
                 lambda: self.engine.play(self.board, chess.engine.Limit(time=1.0))
@@ -267,7 +292,7 @@ class GameHandler:
             if not final_move:
                 final_move = getattr(result, "ponder", list(self.board.legal_moves)[-1])
 
-            log.info(f"🚀 Sending verified tactical move to Lichess: {final_move.uci()}")
+            log.info(f"🚀 Sending verified variant move to Lichess: {final_move.uci()}")
             move_url = f"/api/bot/game/{self.game_id}/move/{final_move.uci()}"
             await RateLimitStopper.safe_post(self.client, move_url)
 
@@ -275,7 +300,7 @@ class GameHandler:
             log.error(f"Critical breakdown inside _make_move processing sequence: {e}", exc_info=True)
             legal_moves_list = list(self.board.legal_moves)
             if legal_moves_list:
-                panic_move = legal_moves_list[-1]  # Shakes up the array sorting to prevent front-loaded Nh6 loops
+                panic_move = legal_moves_list[-1]
                 move_url = f"/api/bot/game/{self.game_id}/move/{panic_move.uci()}"
                 await RateLimitStopper.safe_post(self.client, move_url)
 
@@ -283,8 +308,8 @@ class GameHandler:
         try:
             chat_url = f"/api/bot/game/{self.game_id}/chat"
             await RateLimitStopper.safe_post(
-                self.client,
-                chat_url,
+                self.client, 
+                chat_url, 
                 data={"room": room, "text": message}
             )
         except Exception as e:
