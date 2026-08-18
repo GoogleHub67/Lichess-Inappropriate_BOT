@@ -97,51 +97,56 @@ Alternatively, apply configuration rules directly using a root `.env` template p
 LICHESS_TOKEN=lip_yourtoken
 ```
 
-## 8. Comprehensive Directory Mapping
+## 8. Comprehensive Directory Mapping and Explanation
 ```text
 Lichess-Inappropriate_BOT/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   └── bug_report.md
-│   └── workflows/
-│       ├── bot-ci.yml
-│       ├── lint-and-test.yml
-│       └── publish.yml
-│   ├── pull_request_template.md
-├── .vscode/
-│   └── settings.json
-├── config/
-│   ├── bot_config.py
-│   └── config.yml.default
-├── src/
-│   ├── RateLimit429Stopper.py
-│   ├── __init__.py
-│   ├── bot.py
-│   ├── game_handler.py
-│   └── skill_estimator.py
-└── tests/
-    └── config.xml.default
-├── .env.example
-├── .gitattributes
-├── .gitignore
-├── CITATION.cff
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── Dockerfile
-├── LICENSE
-├── README.md
-├── SECURITY.md
-├── app.py
-├── build.sh
-├── cron-job.py
-├── error.py
-├── launch_unix.sh
-├── launch_windows.bat
-├── pyproject.toml
-├── requirements.txt
-├── setup_linux.sh
-├── setup_mac.sh
-├── setup_windows.ps1
+├── .github/                                  # GitHub configuration and automation files
+│   ├── ISSUE_TEMPLATE/                       # Templates for creating new repository issues
+│   │   └── bug_report.md                     # Standard form for reporting software bugs
+│   └── workflows/                            # Automated CI/CD pipeline script files
+│       ├── bot-ci.yml                        # Automates continuous integration for the bot
+│       ├── lint-and-test.yml                 # Automatically checks code quality and tests
+│       └── publish.yml                       # Automates publishing releases of the bot
+│   ├── pull_request_template.md              # Template for submitting new code changes
+├── .vscode/                                  # Visual Studio Code editor settings
+│   └── settings.json                         # Custom workspace configurations for Visual Studio
+├── config/                                   # Project configuration files and blueprints
+│   ├── bot_config.py                         # Python script handling bot configuration logic
+│   └── config.yml.default                    # Default template for main application settings
+├── src/                                      # Primary executable Python source code
+│   ├── RateLimit429Stopper.py                # Prevents exceeding Lichess API rate limits
+│   ├── __init__.py                           # Marks directory as a Python package
+│   ├── bot.py                                # Main script running the chess bot
+│   ├── game_handler.py                       # Manages live chess gameplay and moves
+│   ├── history_manager.py                    # Records and tracks past game logs
+│   ├── openings.py                           # Handles chess opening book move selections
+│   ├── scout.py                              # Analyzes opponents before starting a game
+│   ├── skill_estimator.py                    # Evaluates and predicts opponent playing strength
+└── tests/                                    # Automated scripts checking code correctness
+    └── config.xml.default                    # Default template for XML layout configurations
+├── .env.example                              # Example template for environment variable keys
+├── .gitattributes                            # Defines attributes for Git repository matching
+├── .gitignore                                # Specifies files Git should always ignore
+├── CITATION.cff                              # Provides instructions for citing this repository
+├── CODE_OF_CONDUCT.md                        # Rules for community behavior and engagement
+├── CONTRIBUTING.md                           # Guidelines for submitting open source contributions
+├── Dockerfile                                # Automation blueprint for building container images
+├── LICENSE                                   # Legal license terms for using code
+├── README.md                                 # Main overview and documentation for project
+├── SECURITY.md                               # Instructions for reporting discovered security vulnerabilities
+├── app.py                                    # Entry point for launching the application
+├── build.sh                                  # Shell script automating project compilation steps
+├── cron-job.py                               # Script running scheduled background automation tasks
+├── dasboard.py                               # Web dashboard interface for bot statistics
+├── error.py                                  # Centralized handling and logging of errors
+├── launch_unix.sh                            # Bash script launching bot on Linux
+├── launch_windows.bat                        # Batch file launching bot on Windows
+├── pyproject.toml                            # Modern packaging and dependency configuration file
+├── requirements.txt                          # List of required Python external libraries
+├── setup_linux.sh                            # Installation script for Linux operating systems
+├── setup_mac.sh                              # Installation script for macOS operating systems
+├── setup_windows.ps1                         # PowerShell script setting up Windows environments
+└── test_pipeline.py                          # Runs full sequence of automated tests
 ```
 
 ## 9. Detailed Module Breakdown
@@ -201,5 +206,5 @@ This codebase is entirely open-source software distributed under the terms of th
 ## 18. Future Roadmap
 * [x] Integrate native web dashboard interfaces to keep track of active match histories.
 * [x] Support customized cloud hosting integration setups for true 24/7 uptime.
-* [ ] Automate opening database selections according to opponent account configurations.
+* [x] Automate opening database selections according to opponent account configurations.
 * [ ] Support all Lichess Variants.
