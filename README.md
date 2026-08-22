@@ -1,4 +1,4 @@
-# 🤖 Lichess-Inappropriate_BOT
+# 🤖 Lichess-MakeChessBetter
 
 ![Language](https://shields.io/badge/Language-English-black)
 ![Engine](https://shields.io/badge/Engine-Stockfish-red)
@@ -29,7 +29,7 @@
 ---
 
 ## 1. Introduction
-`Lichess-Inappropriate_BOT` is an open-source, fully automated chess execution engine designed to interface natively with the lichess.org Bot API. Constructed using modern Python workflows, the bot acts as a bridge between asynchronous web streaming loops and local command-line chess engine binaries, processing matches across classical formats and alternative variants flawlessly.
+`Lichess-MakeChessBetter` is an open-source, fully automated chess execution engine designed to interface natively with the lichess.org Bot API. Constructed using modern Python workflows, the bot acts as a bridge between asynchronous web streaming loops and local command-line chess engine binaries, processing matches across classical formats and alternative variants flawlessly.
 
 ## 2. Project Goal
 The ultimate core focus of the project is to build an **Adaptive Chess Partner** that dynamically matches an opponent's real-time playing prowess. By calculating performance on a per-move basis, the framework prevents games from feeling stagnant, creating a flexible environment that tests tactical accuracy dynamically throughout the match lifecycles.
@@ -75,12 +75,12 @@ The system reads gameplay states continuously via streaming long-lived TCP conne
 ## 6. Installation Blueprint
 To deploy using the pre-compiled Python distribution packaging wheels, run the installation sequence directly through your tool terminal:
 ```bash
-pip install inappropriate_bot-1.0.0-py3-none-any.whl
+pip install MakeChessBetter-1.0.0-py3-none-any.whl
 ```
 To run directly from the raw source code compression archive, unpack the package components manually:
 ```bash
-tar -xvf inappropriate_bot-1.0.0.tar.gz
-cd inappropriate_bot-1.0.0
+tar -xvf MakeChessBetter-1.0.0.tar.gz
+cd MakeChessBetter-1.0.0
 pip install -r requirements.txt
 ```
 
@@ -99,7 +99,7 @@ LICHESS_TOKEN=lip_yourtoken
 
 ## 8. Comprehensive Directory Mapping and Explanation
 ```text
-Lichess-Inappropriate_BOT/
+Lichess-MakeChessBetter/
 ├── .github/                                  # GitHub configuration and automation files
 │   ├── ISSUE_TEMPLATE/                       # Templates for creating new repository issues
 │   │   └── bug_report.md                     # Standard form for reporting software bugs
@@ -167,7 +167,7 @@ Since this is a backend Lichess bot, you don't interact with the Render link dir
 ## 11. Advanced Usage Framework
 Launch the tool package command interface execution entry point natively via the active console window:
 ```bash
-inappropriate_bot
+MakeChessBetter
 ```
 For deep application tracing or to enforce active execution visibility without immediate background detachment, run the raw script modules via:
 ```bash
