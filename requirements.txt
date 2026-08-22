@@ -5,3 +5,5 @@ gunicorn
 python-dotenv
 berserk
 gevent
+sphinx-rtd-theme
+myst-parser
