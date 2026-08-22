@@ -1,36 +1,46 @@
-name: Publish Python Package
+name: Compile and Publish Distribution Assets
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'V*' # Triggers automatically when you push a version tag like V2.0.0
+
+permissions:
+  contents: write # Grants the pipeline write access to attach assets directly to your Release panel
 
 jobs:
-  deploy:
+  build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
-    - name: Checkout Source Code
+    # 1. Pull code straight from your GitHub repository branch
+    - name: Checkout Code Base
       uses: actions/checkout@v4
 
-    - name: Set up Python Engine
+    # 2. Spin up a clean sandbox environment targeting your spec requirement
+    - name: Initialize Python Core
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: "3.10" # Matches your Lichess bot's core environment framework
 
-    - name: Install Build Tools
+    # 3. Pull compilation tools from the registry
+    - name: Install System Build Module
       run: |
         python -m pip install --upgrade pip
-        pip install build twine
+        pip install build
 
-    - name: Build Package Wheels
+    # 4. Generate the distribution assets natively inside the clean GitHub environment
+    # This reads your online repository's pyproject.toml directly
+    - name: Compile Package Archives
       run: python -m build
 
-    - name: Upload to GitHub Packages Registry
+    # 5. Automatically create a release and attach the wheels safely
+    # The 'dist/' folder lives inside this temporary workflow instance and is discarded right after
+    - name: Attach Binaries to GitHub Release Assets
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
       env:
-        TWINE_USERNAME: ${{ github.actor }}
-        TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        python -m twine upload --repository-url https://github.com{{ github.repository_owner }}/- dist/*
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
