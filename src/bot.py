@@ -105,7 +105,7 @@ class LichessBot:
                 log.info("Upgrading to BOT account...")
                 await client.post("/api/bot/account/upgrade")
 
-        log.info("INAPPROPRIATE_BOT is ONLINE")
+        log.info("MakeChessBetter is ONLINE")
         await self._stream_events()
 
     async def _stream_events(self):
