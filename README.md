@@ -79,8 +79,8 @@ pip install MakeChessBetter-1.0.0-py3-none-any.whl
 ```
 To run directly from the raw source code compression archive, unpack the package components manually:
 ```bash
-tar -xvf MakeChessBetter-1.0.0.tar.gz
-cd MakeChessBetter-1.0.0
+tar -xvf MakeChessBetter-2.0.1.tar.gz
+cd MakeChessBetter-2.0.1
 pip install -r requirements.txt
 ```
 
@@ -107,12 +107,15 @@ Lichess-MakeChessBetter/
 │       ├── bot-ci.yml                        # Automates continuous integration for the bot
 │       ├── lint-and-test.yml                 # Automatically checks code quality and tests
 │       └── publish.yml                       # Automates publishing releases of the bot
-│   ├── pull_request_template.md              # Template for submitting new code changes
+│   └── pull_request_template.md              # Template for submitting new code changes
 ├── .vscode/                                  # Visual Studio Code editor settings
 │   └── settings.json                         # Custom workspace configurations for Visual Studio
 ├── config/                                   # Project configuration files and blueprints
 │   ├── bot_config.py                         # Python script handling bot configuration logic
 │   └── config.yml.default                    # Default template for main application settings
+├── docs/                                     # Project documentation files
+│   └── source/                               # Source documentation files
+│       └── conf.py                           # Configuration file for Sphinx documentation generator
 ├── src/                                      # Primary executable Python source code
 │   ├── RateLimit429Stopper.py                # Prevents exceeding Lichess API rate limits
 │   ├── __init__.py                           # Marks directory as a Python package
@@ -122,11 +125,12 @@ Lichess-MakeChessBetter/
 │   ├── openings.py                           # Handles chess opening book move selections
 │   ├── scout.py                              # Analyzes opponents before starting a game
 │   ├── skill_estimator.py                    # Evaluates and predicts opponent playing strength
-└── tests/                                    # Automated scripts checking code correctness
-    └── config.xml.default                    # Default template for XML layout configurations
+├── tests/                                    # Automated scripts checking code correctness
+│   └── config.xml.default                    # Default template for XML layout configurations
 ├── .env.example                              # Example template for environment variable keys
 ├── .gitattributes                            # Defines attributes for Git repository matching
 ├── .gitignore                                # Specifies files Git should always ignore
+├── .readthedocs.yaml                         # Configuration file for Read the Docs hosting
 ├── CITATION.cff                              # Provides instructions for citing this repository
 ├── CODE_OF_CONDUCT.md                        # Rules for community behavior and engagement
 ├── CONTRIBUTING.md                           # Guidelines for submitting open source contributions
@@ -137,7 +141,7 @@ Lichess-MakeChessBetter/
 ├── app.py                                    # Entry point for launching the application
 ├── build.sh                                  # Shell script automating project compilation steps
 ├── cron-job.py                               # Script running scheduled background automation tasks
-├── dasboard.py                               # Web dashboard interface for bot statistics
+├── dashboard.py                              # Web dashboard interface for bot statistics
 ├── error.py                                  # Centralized handling and logging of errors
 ├── launch_unix.sh                            # Bash script launching bot on Linux
 ├── launch_windows.bat                        # Batch file launching bot on Windows
