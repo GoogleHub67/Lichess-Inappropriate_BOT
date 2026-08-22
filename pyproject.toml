@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-inappropriate-bot = "Inappropriate_BOT.bot:main"
+inappropriate-bot = "MakeChessBetter.bot:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
