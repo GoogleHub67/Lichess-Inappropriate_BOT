@@ -75,7 +75,7 @@ The system reads gameplay states continuously via streaming long-lived TCP conne
 ## 6. Installation Blueprint
 To deploy using the pre-compiled Python distribution packaging wheels, run the installation sequence directly through your tool terminal:
 ```bash
-pip install MakeChessBetter-1.0.0-py3-none-any.whl
+pip install MakeChessBetter-2.0.1-py3-none-any.whl
 ```
 To run directly from the raw source code compression archive, unpack the package components manually:
 ```bash
